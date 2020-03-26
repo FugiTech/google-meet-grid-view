@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.3
+// @version      1.4
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -62,13 +62,13 @@
   // Make the button to perform the toggle
   // This runs on a loop since you can join/leave the meeting repeatedly without changing the page
   setInterval(() => {
-    const participantButton = document.querySelector('[aria-label="Show participant options"]')
+    const ownVideoPreview = document.querySelector('[data-fps-request-screencast-cap]')
     const participantVideo = document.querySelector('[data-participant-id]')
-    if (!participantButton || participantButton.__grid_ran || !participantVideo) return
+    if (!ownVideoPreview || ownVideoPreview.__grid_ran || !participantVideo) return
     container = participantVideo.parentElement
-    participantButton.__grid_ran = true
+    ownVideoPreview.__grid_ran = true
 
-    const buttons = participantButton.parentElement
+    const buttons = ownVideoPreview.parentElement.parentElement.parentElement
     buttons.prepend(buttons.children[1].cloneNode())
 
     toggleButton = document.createElement('div')
@@ -84,6 +84,7 @@
           const p = Object.getOwnPropertyDescriptor(v.prototype, 'Aa')
           if (p && p.value && p.value.toString().includes('this.La.get')) {
             if (!v.prototype.Aa.__grid_ran) {
+              console.log('[google-meet-grid-view] Successfully hooked into rendering pipeline')
               const p = new Proxy(v.prototype.Aa, RefreshVideoProxyHandler)
               p.__grid_ran = true
               v.prototype.Aa = p
