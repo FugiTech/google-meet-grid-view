@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.5
+// @version      1.6
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -71,6 +71,7 @@
       background: white;
       border-radius: 0 0 0 8px;
       text-align: left;
+      cursor: auto;
     }
     .__gmgv-button:hover > div {
       display: block;
@@ -78,6 +79,7 @@
     .__gmgv-button > div label {
       display: block;
       line-height: 24px;
+      cursor: pointer;
     }
   `
   document.body.append(s)
@@ -156,6 +158,7 @@
 
     // Add checkboxes for all our additional options
     const additionalOptions = document.createElement('div')
+    additionalOptions.onclick = e => e.stopPropagation()
     toggleButton.appendChild(additionalOptions)
 
     const showOnlyVideoL = document.createElement('label')
@@ -163,7 +166,6 @@
     showOnlyVideoI.type = 'checkbox'
     showOnlyVideoI.checked = showOnlyVideo
     showOnlyVideoI.onchange = e => {
-      e.stopPropagation()
       showOnlyVideo = e.target.checked
       localStorage.setItem('gmgv-show-only-video', showOnlyVideo)
     }
@@ -176,7 +178,6 @@
     highlightSpeakerI.type = 'checkbox'
     highlightSpeakerI.checked = highlightSpeaker
     highlightSpeakerI.onchange = e => {
-      e.stopPropagation()
       highlightSpeaker = e.target.checked
       localStorage.setItem('gmgv-highlight-speaker', highlightSpeaker)
     }
@@ -189,7 +190,6 @@
     includeOwnVideoI.type = 'checkbox'
     includeOwnVideoI.checked = includeOwnVideo
     includeOwnVideoI.onchange = e => {
-      e.stopPropagation()
       includeOwnVideo = e.target.checked
       localStorage.setItem('gmgv-include-own-video', includeOwnVideo)
     }
@@ -293,7 +293,7 @@
             }
           }
           if (thisArg.__grid_videoElem.dataset.participantId) {
-            if (thisArg[objKey].getVolume() > 0.2 && runInterval && highlightSpeaker) {
+            if (thisArg[objKey].getVolume() > 0 && runInterval && highlightSpeaker) {
               thisArg.__grid_videoElem.classList.add('__gmgv-speaking')
             } else {
               thisArg.__grid_videoElem.classList.remove('__gmgv-speaking')
@@ -394,24 +394,26 @@
 
     // If in only-video mode, remove any without video
     if (showOnlyVideo) {
+      // ret[idx][magicKey].wr.Aa.Aa.Ca.Ea.Ws.Ea.state // mu (no) li (yes)
+      const tests = [
+        /\.call\(this\)/,
+        /\.call\(this,.*,"a"\)/,
+        /new Set;this\.\w+=new _/,
+        /new Map.*new Set/,
+        /"un".*"li"/,
+        /new Map/,
+        /Object/,
+      ]
       ret = ret.filter(e => {
-        for (let a of Object.values(e[magicKey])) {
-          if (a && a.constructor && /new Set.*,null\)/.test(a.constructor.toString())) {
-            for (let b of Object.values(a)) {
-              if (b && b.constructor && /new Map.*new Set/.test(b.constructor.toString())) {
-                for (let c of Object.values(b)) {
-                  if (c && c.constructor && /"un".*"li"/.test(c.constructor.toString())) {
-                    for (let d of Object.values(c)) {
-                      if (d === 'li') {
-                        return true
-                      }
-                    }
-                  }
-                }
-              }
-            }
+        let values = [e[magicKey]]
+        for(let t of tests) {
+          let newValues = []
+          for(let v of values) {
+            newValues = newValues.concat(Object.values(v).filter(vv => vv && vv.constructor && t.test(vv.constructor.toString())))
           }
+          values = newValues
         }
+        return values.some(v => v && v.state && v.state === 'li')
       })
     }
 
