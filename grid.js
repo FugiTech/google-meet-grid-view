@@ -144,7 +144,6 @@
     toggleButton.classList = buttons.children[1].classList
     toggleButton.classList.add('__gmgv-button')
     toggleButton.style.display = 'flex'
-    toggleButton.onclick = toggleGrid
     buttons.prepend(toggleButton)
 
     toggleButtonSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg")
@@ -152,7 +151,9 @@
     toggleButtonSVG.style.height = '24px'
     toggleButtonSVG.setAttribute('viewBox', '0 0 24 24')
     toggleButtonSVG.innerHTML = gridOff
+    toggleButtonSVG.onclick = toggleGrid
     toggleButton.appendChild(toggleButtonSVG)
+    
 
     // Add checkboxes for all our additional options
     const additionalOptions = document.createElement('div')
