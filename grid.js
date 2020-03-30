@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.6
+// @version      1.7
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -17,12 +17,11 @@
       highlightSpeaker: 'Highlight speakers',
       includeOwnVideo: 'Include yourself in the grid',
     },
-    'it-IT':{
+    'it-IT': {
       showOnlyVideo: 'Mostra solo partecipanti con video',
       highlightSpeaker: 'Illumina chi ha la paola',
       includeOwnVideo: 'Includi te stesso nella griglia',
-    
-    }
+    },
   }
   const T = key => (translations[navigator.language] && translations[navigator.language][key]) || translations['en-US'][key]
 
@@ -138,7 +137,7 @@
   setInterval(() => {
     // Find the UI elements we need to modify. If they don't exist we haven't entered the meeting yet and will try again later
     const ownVideoPreview = document.querySelector('[data-fps-request-screencast-cap]')
-    const participantVideo = document.querySelector('[data-participant-id]') || document.querySelector('[data-requested-participant-id]');
+    const participantVideo = document.querySelector('[data-participant-id]') || document.querySelector('[data-requested-participant-id]')
     if (!ownVideoPreview || ownVideoPreview.__grid_ran || !participantVideo) return
     container = participantVideo.parentElement
     ownVideoPreview.__grid_ran = true
@@ -155,7 +154,7 @@
     toggleButton.onclick = toggleGrid
     buttons.prepend(toggleButton)
 
-    toggleButtonSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+    toggleButtonSVG = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
     toggleButtonSVG.style.width = '24px'
     toggleButtonSVG.style.height = '24px'
     toggleButtonSVG.setAttribute('viewBox', '0 0 24 24')
@@ -401,20 +400,12 @@
     // If in only-video mode, remove any without video
     if (showOnlyVideo) {
       // ret[idx][magicKey].wr.Aa.Aa.Ca.Ea.Ws.Ea.state // mu (no) li (yes)
-      const tests = [
-        /\.call\(this\)/,
-        /\.call\(this,.*,"a"\)/,
-        /new Set;this\.\w+=new _/,
-        /new Map.*new Set/,
-        /"un".*"li"/,
-        /new Map/,
-        /Object/,
-      ]
+      const tests = [/\.call\(this\)/, /\.call\(this,.*,"a"\)/, /new Set;this\.\w+=new _/, /new Map.*new Set/, /"un".*"li"/, /new Map/, /Object/]
       ret = ret.filter(e => {
         let values = [e[magicKey]]
-        for(let t of tests) {
+        for (let t of tests) {
           let newValues = []
-          for(let v of values) {
+          for (let v of values) {
             newValues = newValues.concat(Object.values(v).filter(vv => vv && vv.constructor && t.test(vv.constructor.toString())))
           }
           values = newValues
