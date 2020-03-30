@@ -17,6 +17,12 @@
       highlightSpeaker: 'Highlight speakers',
       includeOwnVideo: 'Include yourself in the grid',
     },
+    'it-IT':{
+      showOnlyVideo: 'Mostra solo partecipanti con video',
+      highlightSpeaker: 'Illumina chi ha la paola',
+      includeOwnVideo: 'Includi te stesso nella griglia',
+    
+    }
   }
   const T = key => (translations[navigator.language] && translations[navigator.language][key]) || translations['en-US'][key]
 
