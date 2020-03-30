@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.8
+// @version      1.9
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -69,7 +69,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      border: 0.4em solid yellow;
+      border: 0.4em solid #64ffda;
       box-sizing: border-box;
     }
     .__gmgv-button {
@@ -103,6 +103,7 @@
   let runInterval = null
   let container = null
   let toggleButtonSVG = null
+  let pinnedIndex = -1
   let showOnlyVideo = localStorage.getItem('gmgv-show-only-video') === 'true'
   let highlightSpeaker = localStorage.getItem('gmgv-highlight-speaker') === 'true'
   let includeOwnVideo = localStorage.getItem('gmgv-include-own-video') === 'true'
@@ -111,7 +112,11 @@
   const gridUpdateLoop = () => {
     const w = innerWidth / 16
     const h = (innerHeight - 48) / 9
-    const n = container.children.length
+    let n = container.children.length
+    if (pinnedIndex >= 0 && pinnedIndex < n) {
+      // Simulate having an extra quarter of videos so we can dedicate a quarter to the pinned video
+      n = Math.ceil((4 / 3) * (n - 1))
+    }
     let size = 0
     let col
     for (col = 1; col < 9; col++) {
@@ -123,6 +128,16 @@
       size = s
     }
     container.style.gridTemplateColumns = `repeat(${col}, 1fr)`
+    for (let v of container.children) {
+      if (+v.dataset.allocationIndex === pinnedIndex) {
+        const span = Math.ceil(col / 2)
+        v.style.order = -1
+        v.style.gridArea = `span ${span} / span ${span}`
+      } else {
+        v.style.order = v.dataset.allocationIndex
+        v.style.gridArea = ''
+      }
+    }
   }
 
   // Define run functions
@@ -431,6 +446,9 @@
 
     // sort by participant name, or video id if the name is the same (when someone is presenting)
     ret.sort((a, b) => a[magicKey].name.localeCompare(b[magicKey].name) || a[magicKey].id.localeCompare(b[magicKey].id))
+
+    // Set Pinned Index for use in CSS loop
+    pinnedIndex = ret.findIndex(v => v[magicKey].isPinned())
 
     // Build a video list from the ordered output
     return new VideoList(ret)
