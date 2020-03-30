@@ -60,7 +60,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      border: 0.4em solid yellow;
+      border: 0.4em solid #64ffda;
       box-sizing: border-box;
     }
     .__gmgv-button {
