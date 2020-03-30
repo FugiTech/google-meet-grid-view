@@ -22,6 +22,11 @@
       highlightSpeaker: 'Illumina chi ha la paola',
       includeOwnVideo: 'Includi te stesso nella griglia',
     },
+    'nl-NL': {
+      showOnlyVideo: 'Toon alleen deelnemers met video',
+      highlightSpeaker: 'Highlight sprekers',
+      includeOwnVideo: 'Toon jezelf in het raster',
+    },
   }
   const T = key => (translations[navigator.language] && translations[navigator.language][key]) || translations['en-US'][key]
 
