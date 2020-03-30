@@ -132,7 +132,7 @@
   setInterval(() => {
     // Find the UI elements we need to modify. If they don't exist we haven't entered the meeting yet and will try again later
     const ownVideoPreview = document.querySelector('[data-fps-request-screencast-cap]')
-    const participantVideo = document.querySelector('[data-participant-id]')
+    const participantVideo = document.querySelector('[data-participant-id]') || document.querySelector('[data-requested-participant-id]');
     if (!ownVideoPreview || ownVideoPreview.__grid_ran || !participantVideo) return
     container = participantVideo.parentElement
     ownVideoPreview.__grid_ran = true
