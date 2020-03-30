@@ -22,6 +22,11 @@
       highlightSpeaker: 'Illumina chi ha la paola',
       includeOwnVideo: 'Includi te stesso nella griglia',
     },
+    'fr-FR': {
+      showOnlyVideo: 'Ne montrer que les participants avec caméra',
+      highlightSpeaker: 'Surligner ceux qui parlent',
+      includeOwnVideo: 'Vous inclure dans la grille',
+    },
     'nl-NL': {
       showOnlyVideo: 'Toon alleen deelnemers met video',
       highlightSpeaker: 'Highlight sprekers',
