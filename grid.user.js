@@ -27,6 +27,11 @@
       highlightSpeaker: 'Surligner ceux qui parlent',
       includeOwnVideo: 'Vous inclure dans la grille',
     },
+    'nl-NL': {
+      showOnlyVideo: 'Toon alleen deelnemers met video',
+      highlightSpeaker: 'Highlight sprekers',
+      includeOwnVideo: 'Toon jezelf in het raster',
+    },
   }
   const T = key => (translations[navigator.language] && translations[navigator.language][key]) || translations['en-US'][key]
 
