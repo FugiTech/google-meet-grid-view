@@ -37,7 +37,23 @@
       highlightSpeaker: 'Sprecher hervorheben',
       includeOwnVideo: 'Mich im Raster anzeigen',
     },
+    cat: { 
+      showOnlyVideo: 'Mostra només els participants amb video', 
+      highlightSpeaker: 'Ressalta el que parla', 
+      includeOwnVideo: 'Inclou el meu video a la graella', 
+    },  
+    es: { 
+      showOnlyVideo: 'Muestra solo los participantes con vídeo', 
+      highlightSpeaker: 'Resalta al que habla', 
+      includeOwnVideo: 'Incluir mi vídeo en el mosaico', 
+    },
+    sv: {
+      showOnlyVideo: 'Visa endast deltagare med video',
+      highlightSpeaker: 'Markera/följ talare',
+      includeOwnVideo: 'Inkludera dig själv i rutnätet',
+    }
   }
+    
   const T = key =>
     navigator.languages
       .concat(['en'])
