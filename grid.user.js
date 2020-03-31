@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.5
+// @version      1.10
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -12,13 +12,37 @@
 ;(function() {
   // Translations
   const translations = {
-    'en-US': {
+    en: {
       showOnlyVideo: 'Only show participants with video',
       highlightSpeaker: 'Highlight speakers',
       includeOwnVideo: 'Include yourself in the grid',
     },
+    it: {
+      showOnlyVideo: 'Mostra solo partecipanti con video',
+      highlightSpeaker: 'Illumina chi ha la paola',
+      includeOwnVideo: 'Includi te stesso nella griglia',
+    },
+    fr: {
+      showOnlyVideo: 'Ne montrer que les participants avec caméra',
+      highlightSpeaker: 'Surligner ceux qui parlent',
+      includeOwnVideo: 'Vous inclure dans la grille',
+    },
+    nl: {
+      showOnlyVideo: 'Toon alleen deelnemers met video',
+      highlightSpeaker: 'Highlight sprekers',
+      includeOwnVideo: 'Toon jezelf in het raster',
+    },
+    de: {
+      showOnlyVideo: 'Nur Teilnehmer mit Video anzeigen',
+      highlightSpeaker: 'Sprecher hervorheben',
+      includeOwnVideo: 'Mich im Raster anzeigen',
+    },
   }
-  const T = key => (translations[navigator.language] && translations[navigator.language][key]) || translations['en-US'][key]
+  const T = key =>
+    navigator.languages
+      .concat(['en'])
+      .map(l => (translations[l] && translations[l][key]) || (translations[l.split('-')[0]] && translations[l.split('-')[0]][key]))
+      .find(t => t)
 
   // SVGs
   const gridOff =
@@ -54,7 +78,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      border: 0.4em solid yellow;
+      border: 0.4em solid #64ffda;
       box-sizing: border-box;
     }
     .__gmgv-button {
@@ -71,6 +95,7 @@
       background: white;
       border-radius: 0 0 0 8px;
       text-align: left;
+      cursor: auto;
     }
     .__gmgv-button:hover > div {
       display: block;
@@ -78,6 +103,7 @@
     .__gmgv-button > div label {
       display: block;
       line-height: 24px;
+      cursor: pointer;
     }
   `
   document.body.append(s)
@@ -86,6 +112,7 @@
   let runInterval = null
   let container = null
   let toggleButtonSVG = null
+  let pinnedIndex = -1
   let showOnlyVideo = localStorage.getItem('gmgv-show-only-video') === 'true'
   let highlightSpeaker = localStorage.getItem('gmgv-highlight-speaker') === 'true'
   let includeOwnVideo = localStorage.getItem('gmgv-include-own-video') === 'true'
@@ -94,7 +121,11 @@
   const gridUpdateLoop = () => {
     const w = innerWidth / 16
     const h = (innerHeight - 48) / 9
-    const n = container.children.length
+    let n = container.children.length
+    if (pinnedIndex >= 0 && pinnedIndex < n) {
+      // Simulate having an extra quarter of videos so we can dedicate a quarter to the pinned video
+      n = Math.ceil((4 / 3) * (n - 1))
+    }
     let size = 0
     let col
     for (col = 1; col < 9; col++) {
@@ -106,6 +137,16 @@
       size = s
     }
     container.style.gridTemplateColumns = `repeat(${col}, 1fr)`
+    for (let v of container.children) {
+      if (+v.dataset.allocationIndex === pinnedIndex) {
+        const span = Math.ceil(col / 2)
+        v.style.order = -1
+        v.style.gridArea = `span ${span} / span ${span}`
+      } else {
+        v.style.order = v.dataset.allocationIndex
+        v.style.gridArea = ''
+      }
+    }
   }
 
   // Define run functions
@@ -130,7 +171,7 @@
   setInterval(() => {
     // Find the UI elements we need to modify. If they don't exist we haven't entered the meeting yet and will try again later
     const ownVideoPreview = document.querySelector('[data-fps-request-screencast-cap]')
-    const participantVideo = document.querySelector('[data-participant-id]')
+    const participantVideo = document.querySelector('[data-participant-id]') || document.querySelector('[data-requested-participant-id]')
     if (!ownVideoPreview || ownVideoPreview.__grid_ran || !participantVideo) return
     container = participantVideo.parentElement
     ownVideoPreview.__grid_ran = true
@@ -147,7 +188,7 @@
     toggleButton.onclick = toggleGrid
     buttons.prepend(toggleButton)
 
-    toggleButtonSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+    toggleButtonSVG = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
     toggleButtonSVG.style.width = '24px'
     toggleButtonSVG.style.height = '24px'
     toggleButtonSVG.setAttribute('viewBox', '0 0 24 24')
@@ -156,6 +197,7 @@
 
     // Add checkboxes for all our additional options
     const additionalOptions = document.createElement('div')
+    additionalOptions.onclick = e => e.stopPropagation()
     toggleButton.appendChild(additionalOptions)
 
     const showOnlyVideoL = document.createElement('label')
@@ -163,7 +205,6 @@
     showOnlyVideoI.type = 'checkbox'
     showOnlyVideoI.checked = showOnlyVideo
     showOnlyVideoI.onchange = e => {
-      e.stopPropagation()
       showOnlyVideo = e.target.checked
       localStorage.setItem('gmgv-show-only-video', showOnlyVideo)
     }
@@ -176,7 +217,6 @@
     highlightSpeakerI.type = 'checkbox'
     highlightSpeakerI.checked = highlightSpeaker
     highlightSpeakerI.onchange = e => {
-      e.stopPropagation()
       highlightSpeaker = e.target.checked
       localStorage.setItem('gmgv-highlight-speaker', highlightSpeaker)
     }
@@ -189,7 +229,6 @@
     includeOwnVideoI.type = 'checkbox'
     includeOwnVideoI.checked = includeOwnVideo
     includeOwnVideoI.onchange = e => {
-      e.stopPropagation()
       includeOwnVideo = e.target.checked
       localStorage.setItem('gmgv-include-own-video', includeOwnVideo)
     }
@@ -221,7 +260,7 @@
 
               // this.XX.getVolume()
               m = /this\.([A-Za-z]+)\.getVolume\(\)/.exec(p.value.toString())
-              if (p.value.toString().includes('.getVolume()')) {
+              if (m) {
                 console.log('[google-meet-grid-view] Successfully hooked into volume detection', v.prototype[k])
                 const p = new Proxy(v.prototype[k], VolumeDetectionProxyHandler(m[1]))
                 p.__grid_ran = true
@@ -292,8 +331,8 @@
               }
             }
           }
-          if (thisArg.__grid_videoElem.dataset.participantId) {
-            if (thisArg[objKey].getVolume() > 0.2 && runInterval && highlightSpeaker) {
+          if (thisArg.__grid_videoElem.dataset.participantId || thisArg.__grid_videoElem.dataset.requestedParticipantId) {
+            if (thisArg[objKey].getVolume() > 0 && runInterval && highlightSpeaker) {
               thisArg.__grid_videoElem.classList.add('__gmgv-speaking')
             } else {
               thisArg.__grid_videoElem.classList.remove('__gmgv-speaking')
@@ -394,24 +433,18 @@
 
     // If in only-video mode, remove any without video
     if (showOnlyVideo) {
+      // ret[idx][magicKey].wr.Aa.Aa.Ca.Ea.Ws.Ea.state // mu (no) li (yes)
+      const tests = [/\.call\(this\)/, /\.call\(this,.*,"a"\)/, /new Set;this\.\w+=new _/, /new Map.*new Set/, /"un".*"li"/, /new Map/, /Object/]
       ret = ret.filter(e => {
-        for (let a of Object.values(e[magicKey])) {
-          if (a && a.constructor && /new Set.*,null\)/.test(a.constructor.toString())) {
-            for (let b of Object.values(a)) {
-              if (b && b.constructor && /new Map.*new Set/.test(b.constructor.toString())) {
-                for (let c of Object.values(b)) {
-                  if (c && c.constructor && /"un".*"li"/.test(c.constructor.toString())) {
-                    for (let d of Object.values(c)) {
-                      if (d === 'li') {
-                        return true
-                      }
-                    }
-                  }
-                }
-              }
-            }
+        let values = [e[magicKey]]
+        for (let t of tests) {
+          let newValues = []
+          for (let v of values) {
+            newValues = newValues.concat(Object.values(v).filter(vv => vv && vv.constructor && t.test(vv.constructor.toString())))
           }
+          values = newValues
         }
+        return values.some(v => v && v.state && v.state === 'li')
       })
     }
 
@@ -422,6 +455,9 @@
 
     // sort by participant name, or video id if the name is the same (when someone is presenting)
     ret.sort((a, b) => a[magicKey].name.localeCompare(b[magicKey].name) || a[magicKey].id.localeCompare(b[magicKey].id))
+
+    // Set Pinned Index for use in CSS loop
+    pinnedIndex = ret.findIndex(v => v[magicKey].isPinned())
 
     // Build a video list from the ordered output
     return new VideoList(ret)
