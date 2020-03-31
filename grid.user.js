@@ -37,7 +37,7 @@
       highlightSpeaker: 'Sprecher hervorheben',
       includeOwnVideo: 'Mich im Raster anzeigen',
     },
-    sv: {
+    se: {
       showOnlyVideo: 'Visa endast deltagare med video',
       highlightSpeaker: 'Markera/följ talare',
       includeOwnVideo: 'Inkludera mig i rutfältet',
