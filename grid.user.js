@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.9
+// @version      1.10
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -12,33 +12,37 @@
 ;(function() {
   // Translations
   const translations = {
-    'en-US': {
+    en: {
       showOnlyVideo: 'Only show participants with video',
       highlightSpeaker: 'Highlight speakers',
       includeOwnVideo: 'Include yourself in the grid',
     },
-    'it-IT': {
+    it: {
       showOnlyVideo: 'Mostra solo partecipanti con video',
       highlightSpeaker: 'Illumina chi ha la paola',
       includeOwnVideo: 'Includi te stesso nella griglia',
     },
-    'fr-FR': {
+    fr: {
       showOnlyVideo: 'Ne montrer que les participants avec caméra',
       highlightSpeaker: 'Surligner ceux qui parlent',
       includeOwnVideo: 'Vous inclure dans la grille',
     },
-    'nl-NL': {
+    nl: {
       showOnlyVideo: 'Toon alleen deelnemers met video',
       highlightSpeaker: 'Highlight sprekers',
       includeOwnVideo: 'Toon jezelf in het raster',
     },
-    'de-DE': {
+    de: {
       showOnlyVideo: 'Nur Teilnehmer mit Video anzeigen',
       highlightSpeaker: 'Sprecher hervorheben',
       includeOwnVideo: 'Mich im Raster anzeigen',
     },
   }
-  const T = key => (translations[navigator.language] && translations[navigator.language][key]) || translations['en-US'][key]
+  const T = key =>
+    navigator.languages
+      .concat(['en'])
+      .map(l => (translations[l] && translations[l][key]) || (translations[l.split('-')[0]] && translations[l.split('-')[0]][key]))
+      .find(t => t)
 
   // SVGs
   const gridOff =
@@ -256,7 +260,7 @@
 
               // this.XX.getVolume()
               m = /this\.([A-Za-z]+)\.getVolume\(\)/.exec(p.value.toString())
-              if (p.value.toString().includes('.getVolume()')) {
+              if (m) {
                 console.log('[google-meet-grid-view] Successfully hooked into volume detection', v.prototype[k])
                 const p = new Proxy(v.prototype[k], VolumeDetectionProxyHandler(m[1]))
                 p.__grid_ran = true
@@ -327,7 +331,7 @@
               }
             }
           }
-          if (thisArg.__grid_videoElem.dataset.participantId) {
+          if (thisArg.__grid_videoElem.dataset.participantId || thisArg.__grid_videoElem.dataset.requestedParticipantId) {
             if (thisArg[objKey].getVolume() > 0 && runInterval && highlightSpeaker) {
               thisArg.__grid_videoElem.classList.add('__gmgv-speaking')
             } else {

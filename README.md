@@ -5,7 +5,3 @@ This script forcibly loads every participant's video when grid view is enabled a
 ## Privacy Policy
 
 This script does not track any user data. It does not connect to any external server. Tampermonkey will connect to Greasyfork periodically to check for updates but that does not provide me with any user data.
-
-## License
-
-This script is under the MIT License.
