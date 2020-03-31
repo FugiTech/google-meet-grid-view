@@ -12,6 +12,11 @@
 ;(function() {
   // Translations
   const translations = {
+    es: {
+      showOnlyVideo: 'Unicamente mostrar participantes con video',
+      highlightSpeaker: 'Resaltar participantes',
+      includeOwnVideo: 'Incluir mi video en el grid',
+    },
     en: {
       showOnlyVideo: 'Only show participants with video',
       highlightSpeaker: 'Highlight speakers',
