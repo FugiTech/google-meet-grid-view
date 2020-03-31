@@ -37,6 +37,11 @@
       highlightSpeaker: 'Sprecher hervorheben',
       includeOwnVideo: 'Mich im Raster anzeigen',
     },
+    'zh-TW': {
+      showOnlyVideo: '僅顯示有視訊的與會者',
+      highlightSpeaker: '強調發言者',
+      includeOwnVideo: '將自己的視訊顯示於網格中',
+    },
   }
   const T = key =>
     navigator.languages
