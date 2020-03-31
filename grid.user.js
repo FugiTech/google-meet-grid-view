@@ -37,6 +37,11 @@
       highlightSpeaker: 'Sprecher hervorheben',
       includeOwnVideo: 'Mich im Raster anzeigen',
     },
+    sv: {
+      showOnlyVideo: 'Visa endast deltagare med video',
+      highlightSpeaker: 'Markera/följ talare',
+      includeOwnVideo: 'Inkludera mig i rutfältet',
+    },
   }
   const T = key =>
     navigator.languages
