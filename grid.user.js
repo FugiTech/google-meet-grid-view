@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.10
+// @version      1.11
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -12,30 +12,55 @@
 ;(function() {
   // Translations
   const translations = {
+    ca: {
+      showOnlyVideo: 'Mostra només els participants amb video',
+      highlightSpeaker: 'Ressalta el que parla',
+      includeOwnVideo: 'Inclou el meu video a la graella',
+    },
+    de: {
+      showOnlyVideo: 'Nur Teilnehmer mit Video anzeigen',
+      highlightSpeaker: 'Sprecher hervorheben',
+      includeOwnVideo: 'Mich im Raster anzeigen',
+    },
     en: {
       showOnlyVideo: 'Only show participants with video',
       highlightSpeaker: 'Highlight speakers',
       includeOwnVideo: 'Include yourself in the grid',
     },
-    it: {
-      showOnlyVideo: 'Mostra solo partecipanti con video',
-      highlightSpeaker: 'Illumina chi ha la paola',
-      includeOwnVideo: 'Includi te stesso nella griglia',
+    es: {
+      showOnlyVideo: 'Unicamente mostrar participantes con video',
+      highlightSpeaker: 'Resaltar participantes',
+      includeOwnVideo: 'Incluir mi video en el grid',
     },
     fr: {
       showOnlyVideo: 'Ne montrer que les participants avec caméra',
       highlightSpeaker: 'Surligner ceux qui parlent',
       includeOwnVideo: 'Vous inclure dans la grille',
     },
+    it: {
+      showOnlyVideo: 'Mostra solo partecipanti con video',
+      highlightSpeaker: 'Illumina chi ha la paola',
+      includeOwnVideo: 'Includi te stesso nella griglia',
+    },
     nl: {
       showOnlyVideo: 'Toon alleen deelnemers met video',
       highlightSpeaker: 'Highlight sprekers',
       includeOwnVideo: 'Toon jezelf in het raster',
     },
-    de: {
-      showOnlyVideo: 'Nur Teilnehmer mit Video anzeigen',
-      highlightSpeaker: 'Sprecher hervorheben',
-      includeOwnVideo: 'Mich im Raster anzeigen',
+    sv: {
+      showOnlyVideo: 'Visa endast deltagare med video',
+      highlightSpeaker: 'Markera/följ talare',
+      includeOwnVideo: 'Inkludera mig i rutnätet',
+    },
+    zh: {
+      showOnlyVideo: '仅显示有视讯的与会者',
+      highlightSpeaker: '强调发言者',
+      includeOwnVideo: '将自己的视讯显示于网格中',
+    },
+    'zh-TW': {
+      showOnlyVideo: '僅顯示有視訊的與會者',
+      highlightSpeaker: '強調發言者',
+      includeOwnVideo: '將自己的視訊顯示於網格中',
     },
   }
   const T = key =>
