@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.12
+// @version      1.13
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -47,6 +47,11 @@
       highlightSpeaker: 'Highlight sprekers',
       includeOwnVideo: 'Toon jezelf in het raster',
     },
+    pl: {
+      showOnlyVideo: 'Pokaż tylko uczestników z wideo',
+      highlightSpeaker: 'Wyróżnij osobę prezentującą',
+      includeOwnVideo: 'Uwzględnij siebie',
+    },
     pt: {
       showOnlyVideo: 'Mostrar somente participantes com vídeo',
       highlightSpeaker: 'Destacar quem está falando',
@@ -56,11 +61,6 @@
       showOnlyVideo: 'Visa endast deltagare med video',
       highlightSpeaker: 'Markera/följ talare',
       includeOwnVideo: 'Inkludera mig i rutnätet',
-    },
-    pl: {
-      showOnlyVideo: 'Pokaż tylko uczestników z wideo',
-      highlightSpeaker: 'Wyróżnij osobę prezentującą',
-      includeOwnVideo: 'Uwzględnij siebie',
     },
     zh: {
       showOnlyVideo: '仅显示有视讯的与会者',
@@ -286,13 +286,12 @@
     // ones that roughly match the code we're looking for by running regexs on the function source code.
     // We can then parse that code to get variable names out and use javascript Proxys to override them.
     if (window.default_MeetingsUi) {
+      let m
       for (let [_k, v] of Object.entries(window.default_MeetingsUi)) {
         if (v && v.prototype) {
           for (let k of Object.keys(v.prototype)) {
             const p = Object.getOwnPropertyDescriptor(v.prototype, k)
             if (p && p.value && !v.prototype[k].__grid_ran) {
-              let m
-
               // this.XX.get(_).YY(this._)
               m = /this\.([A-Za-z]+)\.get\([A-Za-z]+\)\.([A-Za-z]+)\(this\.[A-Za-z]+\)/.exec(p.value.toString())
               if (m) {
