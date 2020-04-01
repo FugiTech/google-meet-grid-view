@@ -47,6 +47,11 @@
       highlightSpeaker: 'Highlight sprekers',
       includeOwnVideo: 'Toon jezelf in het raster',
     },
+    pt: {
+      showOnlyVideo: 'Mostrar somente participantes com vídeo',
+      highlightSpeaker: 'Destacar quem está falando',
+      includeOwnVideo: 'Incluir meu vídeo no grid',
+    },
     sv: {
       showOnlyVideo: 'Visa endast deltagare med video',
       highlightSpeaker: 'Markera/följ talare',
