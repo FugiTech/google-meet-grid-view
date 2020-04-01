@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.11
+// @version      1.12
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -85,6 +85,9 @@
       right: 5px !important;
       left: 5px !important;
       bottom: 0 !important;
+    }
+    .__gmgv-vid-container.__gmgv-chat-enabled {
+      right: 325px !important;
     }
     .__gmgv-vid-container > div {
       position: relative !important;
@@ -195,71 +198,77 @@
   // This runs on a loop since you can join/leave the meeting repeatedly without changing the page
   setInterval(() => {
     // Find the UI elements we need to modify. If they don't exist we haven't entered the meeting yet and will try again later
+    const participantVideo = document.querySelector('[data-allocation-index]')
+    const _container = participantVideo && participantVideo.parentElement
+    if (_container && _container !== container) {
+      container = _container
+      if (runInterval) enableGrid() // When someone starts a presentation `container` will change under us, so we need to restart the grid
+    }
+
     const ownVideoPreview = document.querySelector('[data-fps-request-screencast-cap]')
-    const participantVideo = document.querySelector('[data-participant-id]') || document.querySelector('[data-requested-participant-id]')
-    if (!ownVideoPreview || ownVideoPreview.__grid_ran || !participantVideo) return
-    container = participantVideo.parentElement
-    ownVideoPreview.__grid_ran = true
+    const buttons = ownVideoPreview && ownVideoPreview.parentElement.parentElement.parentElement
+    if (buttons && !buttons.__grid_ran) {
+      buttons.__grid_ran = true
 
-    // Find the button container element and copy the divider
-    const buttons = ownVideoPreview.parentElement.parentElement.parentElement
-    buttons.prepend(buttons.children[1].cloneNode())
+      // Find the button container element and copy the divider
+      buttons.prepend(buttons.children[1].cloneNode())
 
-    // Add our button to to enable/disable the grid
-    const toggleButton = document.createElement('div')
-    toggleButton.classList = buttons.children[1].classList
-    toggleButton.classList.add('__gmgv-button')
-    toggleButton.style.display = 'flex'
-    toggleButton.onclick = toggleGrid
-    buttons.prepend(toggleButton)
+      // Add our button to to enable/disable the grid
+      const toggleButton = document.createElement('div')
+      toggleButton.classList = buttons.children[1].classList
+      toggleButton.classList.add('__gmgv-button')
+      toggleButton.style.display = 'flex'
+      toggleButton.onclick = toggleGrid
+      buttons.prepend(toggleButton)
 
-    toggleButtonSVG = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-    toggleButtonSVG.style.width = '24px'
-    toggleButtonSVG.style.height = '24px'
-    toggleButtonSVG.setAttribute('viewBox', '0 0 24 24')
-    toggleButtonSVG.innerHTML = gridOff
-    toggleButton.appendChild(toggleButtonSVG)
+      toggleButtonSVG = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+      toggleButtonSVG.style.width = '24px'
+      toggleButtonSVG.style.height = '24px'
+      toggleButtonSVG.setAttribute('viewBox', '0 0 24 24')
+      toggleButtonSVG.innerHTML = gridOff
+      toggleButton.appendChild(toggleButtonSVG)
 
-    // Add checkboxes for all our additional options
-    const additionalOptions = document.createElement('div')
-    additionalOptions.onclick = e => e.stopPropagation()
-    toggleButton.appendChild(additionalOptions)
+      // Add checkboxes for all our additional options
+      const additionalOptions = document.createElement('div')
+      additionalOptions.onclick = e => e.stopPropagation()
+      toggleButton.appendChild(additionalOptions)
 
-    const showOnlyVideoL = document.createElement('label')
-    const showOnlyVideoI = document.createElement('input')
-    showOnlyVideoI.type = 'checkbox'
-    showOnlyVideoI.checked = showOnlyVideo
-    showOnlyVideoI.onchange = e => {
-      showOnlyVideo = e.target.checked
-      localStorage.setItem('gmgv-show-only-video', showOnlyVideo)
+      const showOnlyVideoL = document.createElement('label')
+      const showOnlyVideoI = document.createElement('input')
+      showOnlyVideoI.type = 'checkbox'
+      showOnlyVideoI.checked = showOnlyVideo
+      showOnlyVideoI.onchange = e => {
+        showOnlyVideo = e.target.checked
+        localStorage.setItem('gmgv-show-only-video', showOnlyVideo)
+      }
+      showOnlyVideoL.innerText = T('showOnlyVideo')
+      showOnlyVideoL.prepend(showOnlyVideoI)
+      additionalOptions.appendChild(showOnlyVideoL)
+
+      const highlightSpeakerL = document.createElement('label')
+      const highlightSpeakerI = document.createElement('input')
+      highlightSpeakerI.type = 'checkbox'
+      highlightSpeakerI.checked = highlightSpeaker
+      highlightSpeakerI.onchange = e => {
+        highlightSpeaker = e.target.checked
+        localStorage.setItem('gmgv-highlight-speaker', highlightSpeaker)
+      }
+      highlightSpeakerL.innerText = T('highlightSpeaker')
+      highlightSpeakerL.prepend(highlightSpeakerI)
+      additionalOptions.appendChild(highlightSpeakerL)
+
+      const includeOwnVideoL = document.createElement('label')
+      const includeOwnVideoI = document.createElement('input')
+      includeOwnVideoI.type = 'checkbox'
+      includeOwnVideoI.checked = includeOwnVideo
+      includeOwnVideoI.onchange = e => {
+        includeOwnVideo = e.target.checked
+        localStorage.setItem('gmgv-include-own-video', includeOwnVideo)
+      }
+      includeOwnVideoL.innerText = T('includeOwnVideo')
+      includeOwnVideoL.prepend(includeOwnVideoI)
+      additionalOptions.appendChild(includeOwnVideoL)
     }
-    showOnlyVideoL.innerText = T('showOnlyVideo')
-    showOnlyVideoL.prepend(showOnlyVideoI)
-    additionalOptions.appendChild(showOnlyVideoL)
-
-    const highlightSpeakerL = document.createElement('label')
-    const highlightSpeakerI = document.createElement('input')
-    highlightSpeakerI.type = 'checkbox'
-    highlightSpeakerI.checked = highlightSpeaker
-    highlightSpeakerI.onchange = e => {
-      highlightSpeaker = e.target.checked
-      localStorage.setItem('gmgv-highlight-speaker', highlightSpeaker)
-    }
-    highlightSpeakerL.innerText = T('highlightSpeaker')
-    highlightSpeakerL.prepend(highlightSpeakerI)
-    additionalOptions.appendChild(highlightSpeakerL)
-
-    const includeOwnVideoL = document.createElement('label')
-    const includeOwnVideoI = document.createElement('input')
-    includeOwnVideoI.type = 'checkbox'
-    includeOwnVideoI.checked = includeOwnVideo
-    includeOwnVideoI.onchange = e => {
-      includeOwnVideo = e.target.checked
-      localStorage.setItem('gmgv-include-own-video', includeOwnVideo)
-    }
-    includeOwnVideoL.innerText = T('includeOwnVideo')
-    includeOwnVideoL.prepend(includeOwnVideoI)
-    additionalOptions.appendChild(includeOwnVideoL)
 
     // Find the functions inside google meets code that we need to override for our functionality
     // Notably we're looking for the function that handles video layout, and the function that detects volume
@@ -267,7 +276,7 @@
     // ones that roughly match the code we're looking for by running regexs on the function source code.
     // We can then parse that code to get variable names out and use javascript Proxys to override them.
     if (window.default_MeetingsUi) {
-      for (let v of Object.values(window.default_MeetingsUi)) {
+      for (let [_k, v] of Object.entries(window.default_MeetingsUi)) {
         if (v && v.prototype) {
           for (let k of Object.keys(v.prototype)) {
             const p = Object.getOwnPropertyDescriptor(v.prototype, k)
@@ -292,6 +301,15 @@
                 v.prototype[k] = p
               }
             }
+          }
+        }
+        if (v && typeof v === 'function' && !v.__grid_ran) {
+          m = /function\(a,b,c\){return!0===c\?/.exec(v.toString())
+          if (m) {
+            console.log('[google-meet-grid-view] Successfully hooked into chat toggle', v)
+            const p = new Proxy(v, ToggleProxyHandler())
+            p.__grid_ran = true
+            window.default_MeetingsUi[_k] = p
           }
         }
       }
@@ -356,11 +374,32 @@
               }
             }
           }
-          if (thisArg.__grid_videoElem.dataset.participantId || thisArg.__grid_videoElem.dataset.requestedParticipantId) {
+          if (thisArg.__grid_videoElem.dataset.allocationIndex) {
             if (thisArg[objKey].getVolume() > 0 && runInterval && highlightSpeaker) {
               thisArg.__grid_videoElem.classList.add('__gmgv-speaking')
             } else {
               thisArg.__grid_videoElem.classList.remove('__gmgv-speaking')
+            }
+          }
+        }
+        return target.apply(thisArg, argumentsList)
+      },
+    }
+  }
+
+  function ToggleProxyHandler() {
+    return {
+      apply: function(target, thisArg, argumentsList) {
+        if (argumentsList.length === 3 && container) {
+          const elems = Object.values(argumentsList[0])
+            .filter(v => Array.isArray(v))
+            .flat()
+            .filter(v => v instanceof HTMLElement)
+          const v = argumentsList[2]
+          if (elems.length === 1) {
+            const el = elems[0]
+            if (el.parentElement === container.parentElement.parentElement && el.clientWidth === 320) {
+              container.classList.toggle('__gmgv-chat-enabled', v)
             }
           }
         }
@@ -426,6 +465,9 @@
         }
       }
     }
+    if (!importantObject) {
+      throw new Error('No other participants, using default layout')
+    }
 
     // Reusing the object we found earlier, find the map of participant data
     let videoMap
@@ -481,8 +523,11 @@
     // sort by participant name, or video id if the name is the same (when someone is presenting)
     ret.sort((a, b) => a[magicKey].name.localeCompare(b[magicKey].name) || a[magicKey].id.localeCompare(b[magicKey].id))
 
-    // Set Pinned Index for use in CSS loop
+    // Set Pinned Index for use in CSS loop. If there is no pin, use the presenter if available
     pinnedIndex = ret.findIndex(v => v[magicKey].isPinned())
+    if (pinnedIndex < 0) {
+      pinnedIndex = ret.findIndex(v => !!v[magicKey].parent)
+    }
 
     // Build a video list from the ordered output
     return new VideoList(ret)
