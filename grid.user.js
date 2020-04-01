@@ -38,8 +38,8 @@
       includeOwnVideo: 'Vous inclure dans la grille',
     },
     it: {
-      showOnlyVideo: 'Mostra solo partecipanti con video',
-      highlightSpeaker: 'Illumina chi ha la paola',
+      showOnlyVideo: 'Mostra solo i partecipanti con la fotocamera attiva',
+      highlightSpeaker: 'Illumina chi sta parlando',
       includeOwnVideo: 'Includi te stesso nella griglia',
     },
     nl: {
