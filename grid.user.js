@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.13
+// @version      1.14
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -96,10 +96,10 @@
     .__gmgv-vid-container {
       display: grid;
       grid-auto-rows: 1fr;
-      top: 48px !important;
-      right: 5px !important;
-      left: 5px !important;
-      bottom: 0 !important;
+      top: 50px !important;
+      right: 2px !important;
+      left: 2px !important;
+      bottom: 2px !important;
     }
     .__gmgv-vid-container.__gmgv-chat-enabled {
       right: 325px !important;
@@ -114,20 +114,6 @@
       background: 0 0 !important;
     }
     .__gmgv-vid-container > div:after {
-      transition: all .5s linear;
-      transition-delay: .5s;
-      content: "";
-      display: block;
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      border: 0.4em solid transparent;
-      box-sizing: border-box;
-    }
-    .__gmgv-vid-container > div.__gmgv-speaking:after {
-      transition: all 0.1s linear;
       content: "";
       display: block;
       position: absolute;
@@ -137,6 +123,13 @@
       bottom: 0;
       border: 0.4em solid #64ffda;
       box-sizing: border-box;
+
+      transition: opacity 300ms linear 500ms;
+      opacity: 0;
+    }
+    .__gmgv-vid-container > div.__gmgv-speaking:after {
+      transition: opacity 60ms linear;
+      opacity: 1;
     }
     .__gmgv-button {
       overflow: visible !important;
