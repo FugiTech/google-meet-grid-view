@@ -37,6 +37,11 @@
       highlightSpeaker: 'Surligner ceux qui parlent',
       includeOwnVideo: 'Vous inclure dans la grille',
     },
+    hr: {
+      showOnlyVideo: 'Prikaži samo sudionike sa kamerom',
+      highlightSpeaker: 'Naglasi govornike',
+      includeOwnVideo: 'Uključi sebe u mrežnom prikazu',
+    },
     it: {
       showOnlyVideo: 'Mostra solo i partecipanti con la fotocamera attiva',
       highlightSpeaker: 'Illumina chi sta parlando',
