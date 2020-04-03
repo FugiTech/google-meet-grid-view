@@ -108,7 +108,21 @@
       width: 100% !important;
       background: 0 0 !important;
     }
-    .__gmgv-speaking:after {
+    .__gmgv-vid-container > div:after {
+      transition: all .5s linear;
+      transition-delay: .5s;
+      content: "";
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border: 0.4em solid transparent;
+      box-sizing: border-box;
+    }
+    .__gmgv-vid-container > div.__gmgv-speaking:after {
+      transition: all 0.1s linear;
       content: "";
       display: block;
       position: absolute;
