@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.14
+// @version      1.15
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -9,7 +9,7 @@
 // @run-at       document-idle
 // ==/UserScript==
 
-;(function() {
+;(function () {
   // Translations
   const translations = {
     ca: {
@@ -161,11 +161,14 @@
   // Variables
   let runInterval = null
   let container = null
-  let toggleButtonSVG = null
   let pinnedIndex = -1
   let showOnlyVideo = localStorage.getItem('gmgv-show-only-video') === 'true'
   let highlightSpeaker = localStorage.getItem('gmgv-highlight-speaker') === 'true'
   let includeOwnVideo = localStorage.getItem('gmgv-include-own-video') === 'true'
+  let toggleButtonSVG = null
+  let showOnlyVideoI = null
+  let highlightSpeakerI = null
+  let includeOwnVideoI = null
 
   // This continually probes the number of participants & screen size to ensure videos are max possible size regardless of window layout
   const gridUpdateLoop = () => {
@@ -256,7 +259,7 @@
       toggleButton.appendChild(additionalOptions)
 
       const showOnlyVideoL = document.createElement('label')
-      const showOnlyVideoI = document.createElement('input')
+      showOnlyVideoI = document.createElement('input')
       showOnlyVideoI.type = 'checkbox'
       showOnlyVideoI.checked = showOnlyVideo
       showOnlyVideoI.onchange = e => {
@@ -268,7 +271,7 @@
       additionalOptions.appendChild(showOnlyVideoL)
 
       const highlightSpeakerL = document.createElement('label')
-      const highlightSpeakerI = document.createElement('input')
+      highlightSpeakerI = document.createElement('input')
       highlightSpeakerI.type = 'checkbox'
       highlightSpeakerI.checked = highlightSpeaker
       highlightSpeakerI.onchange = e => {
@@ -280,7 +283,7 @@
       additionalOptions.appendChild(highlightSpeakerL)
 
       const includeOwnVideoL = document.createElement('label')
-      const includeOwnVideoI = document.createElement('input')
+      includeOwnVideoI = document.createElement('input')
       includeOwnVideoI.type = 'checkbox'
       includeOwnVideoI.checked = includeOwnVideo
       includeOwnVideoI.onchange = e => {
@@ -341,7 +344,7 @@
   // All we do here is install another proxy on the Map that returns which layout to use
   function RefreshVideoProxyHandler(objKey, funcKey) {
     return {
-      apply: function(target, thisArg, argumentsList) {
+      apply: function (target, thisArg, argumentsList) {
         if (!thisArg[objKey].__grid_ran) {
           const p = new Proxy(thisArg[objKey], LayoutVideoProxyHandler(thisArg, funcKey))
           p.__grid_ran = true
@@ -357,7 +360,7 @@
   // If our layout function errors, or grid view is disabled, we return the actual function.
   function LayoutVideoProxyHandler(parent, funcKey) {
     return {
-      get: function(target, name) {
+      get: function (target, name) {
         let ret = Reflect.get(target, name)
         if (typeof ret === 'function') {
           ret = ret.bind(target)
@@ -386,7 +389,7 @@
   // video container depending on volume level. This allows us to add visual effects like a border.
   function VolumeDetectionProxyHandler(objKey) {
     return {
-      apply: function(target, thisArg, argumentsList) {
+      apply: function (target, thisArg, argumentsList) {
         if (!thisArg.isDisposed()) {
           if (!thisArg.__grid_videoElem) {
             for (let v of Object.values(thisArg)) {
@@ -410,7 +413,7 @@
 
   function ToggleProxyHandler() {
     return {
-      apply: function(target, thisArg, argumentsList) {
+      apply: function (target, thisArg, argumentsList) {
         if (argumentsList.length === 3 && container) {
           const elems = Object.values(argumentsList[0])
             .filter(v => Array.isArray(v))
@@ -553,4 +556,73 @@
     // Build a video list from the ordered output
     return new VideoList(ret)
   }
+
+  // Extension communication
+  window.addEventListener('message', event => {
+    if (event.source !== window) return // Only accept messages from ourselves
+    if (event.data.sender !== 'gmgv_content') return
+    try {
+      switch (event.data.type) {
+        case 'getState':
+          window.postMessage({
+            id: event.data.id,
+            sender: 'gmgv_user',
+            inMeeting: !!container,
+            enabled: !!runInterval,
+            showOnlyVideo,
+            highlightSpeaker,
+            includeOwnVideo,
+          })
+          break
+        case 'setEnabled':
+          event.data.value ? enableGrid() : disableGrid()
+          window.postMessage({
+            id: event.data.id,
+            sender: 'gmgv_user',
+            success: true,
+          })
+          break
+        case 'setShowOnlyVideo':
+          showOnlyVideo = showOnlyVideoI.checked = event.data.value
+          localStorage.setItem('gmgv-show-only-video', showOnlyVideo)
+          window.postMessage({
+            id: event.data.id,
+            sender: 'gmgv_user',
+            success: true,
+          })
+          break
+        case 'setHighlightSpeaker':
+          highlightSpeaker = highlightSpeakerI.checked = event.data.value
+          localStorage.setItem('gmgv-highlight-speaker', highlightSpeaker)
+          window.postMessage({
+            id: event.data.id,
+            sender: 'gmgv_user',
+            success: true,
+          })
+          break
+        case 'setIncludeOwnVideo':
+          includeOwnVideo = includeOwnVideoI.checked = event.data.value
+          localStorage.setItem('gmgv-include-own-video', includeOwnVideo)
+          window.postMessage({
+            id: event.data.id,
+            sender: 'gmgv_user',
+            success: true,
+          })
+          break
+        default:
+          window.postMessage({
+            id: event.data.id,
+            sender: 'gmgv_user',
+            error: 'unknown message',
+          })
+          break
+      }
+    } catch (error) {
+      window.postMessage({
+        id: event.data.id,
+        sender: 'gmgv_user',
+        error,
+      })
+    }
+  })
 })()

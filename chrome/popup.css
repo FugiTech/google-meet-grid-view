@@ -1,0 +1,44 @@
+html,
+body {
+  margin: 0;
+}
+body {
+  font-family: 'Roboto', 'LocalRoboto', 'Helvetica Neue', 'Helvetica', 'sans-serif';
+  background: #eeeeee;
+  padding: 2px 0 3px 0;
+}
+body > * {
+  white-space: nowrap;
+  display: none;
+  padding: 6px 20px;
+  background: #ffffff;
+}
+body .spacer {
+  display: block;
+  padding: 0;
+  margin-bottom: 4px;
+}
+body.not-running #not-running {
+  display: block;
+  font-style: italic;
+}
+body.no-meeting #no-meeting {
+  display: block;
+  font-style: italic;
+}
+body.in-meeting #enabled,
+body.in-meeting #show-only-video,
+body.in-meeting #highlight-speaker,
+body.in-meeting #include-own-video {
+  display: flex;
+  align-items: center;
+}
+body #source-code {
+  display: block;
+}
+label:not(.disabled) {
+  cursor: pointer;
+}
+input {
+  margin-right: 8px;
+}

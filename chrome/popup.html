@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="popup.css" />
+  </head>
+  <body class="not-running">
+    <div id="not-running">Grid View is not running on this page</div>
+    <div id="no-meeting">Grid View does not run until you join the meeting</div>
+    <label id="enabled">
+      <input type="checkbox" />
+      Enable Grid View
+    </label>
+
+    <div class="spacer"></div>
+
+    <label id="show-only-video">
+      <input type="checkbox" />
+      Only show participants with video
+    </label>
+    <label id="highlight-speaker">
+      <input type="checkbox" />
+      Highlight speakers
+    </label>
+    <label id="include-own-video">
+      <input type="checkbox" />
+      Include yourself in the grid
+    </label>
+
+    <div class="spacer"></div>
+
+    <a id="source-code" href="https://github.com/Fugiman/google-meet-grid-view">
+      Source Code available on Github
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
