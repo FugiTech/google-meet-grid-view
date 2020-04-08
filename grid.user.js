@@ -42,6 +42,11 @@
       highlightSpeaker: 'Illumina chi ha la paola',
       includeOwnVideo: 'Includi te stesso nella griglia',
     },
+    ja: {
+      showOnlyVideo: 'カメラをオンにしている参加者のみ',
+      highlightSpeaker: '発言者をハイライト',
+      includeOwnVideo: '自分を含める',
+    },
     nl: {
       showOnlyVideo: 'Toon alleen deelnemers met video',
       highlightSpeaker: 'Highlight sprekers',
