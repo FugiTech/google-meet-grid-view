@@ -72,6 +72,11 @@
       highlightSpeaker: 'Markera/följ talare',
       includeOwnVideo: 'Inkludera mig i rutnätet',
     },
+    uk: {
+      showOnlyVideo: 'Показати лише учасників з відео',
+      highlightSpeaker: 'Виділити ведучого',
+      includeOwnVideo: 'Включити себе',
+    },
     zh: {
       showOnlyVideo: '仅显示有视讯的与会者',
       highlightSpeaker: '强调发言者',
