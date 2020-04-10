@@ -47,6 +47,11 @@
       highlightSpeaker: 'Illumina chi sta parlando',
       includeOwnVideo: 'Includi te stesso nella griglia',
     },
+    ja: {
+      showOnlyVideo: 'カメラをオンにしている参加者のみ',
+      highlightSpeaker: '発言者をハイライト',
+      includeOwnVideo: '自分を含める',
+    },
     nl: {
       showOnlyVideo: 'Toon alleen deelnemers met video',
       highlightSpeaker: 'Highlight sprekers',
@@ -66,6 +71,11 @@
       showOnlyVideo: 'Visa endast deltagare med video',
       highlightSpeaker: 'Markera/följ talare',
       includeOwnVideo: 'Inkludera mig i rutnätet',
+    },
+    uk: {
+      showOnlyVideo: 'Показати лише учасників з відео',
+      highlightSpeaker: 'Виділити ведучого',
+      includeOwnVideo: 'Включити себе',
     },
     zh: {
       showOnlyVideo: '仅显示有视讯的与会者',
