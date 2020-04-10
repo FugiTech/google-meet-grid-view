@@ -29,7 +29,8 @@ body.no-meeting #no-meeting {
 body.in-meeting #enabled,
 body.in-meeting #show-only-video,
 body.in-meeting #highlight-speaker,
-body.in-meeting #include-own-video {
+body.in-meeting #include-own-video ,
+body.in-meeting #auto-enable {
   display: flex;
   align-items: center;
 }

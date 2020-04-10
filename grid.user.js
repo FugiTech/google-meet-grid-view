@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.15
+// @version      1.16
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -26,6 +26,11 @@
       showOnlyVideo: 'Only show participants with video',
       highlightSpeaker: 'Highlight speakers',
       includeOwnVideo: 'Include yourself in the grid',
+      autoEnable: 'Enable grid view by default',
+      notRunning: 'Grid View is not running on this page',
+      noMeeting: 'Grid View does not run until you join the meeting',
+      enabled: 'Enable Grid View',
+      sourceCode: 'Source Code available on Github',
     },
     es: {
       showOnlyVideo: 'Unicamente mostrar participantes con video',
@@ -175,10 +180,12 @@
   let showOnlyVideo = localStorage.getItem('gmgv-show-only-video') === 'true'
   let highlightSpeaker = localStorage.getItem('gmgv-highlight-speaker') === 'true'
   let includeOwnVideo = localStorage.getItem('gmgv-include-own-video') === 'true'
+  let autoEnable = localStorage.getItem('gmgv-auto-enable') === 'true'
   let toggleButtonSVG = null
   let showOnlyVideoI = null
   let highlightSpeakerI = null
   let includeOwnVideoI = null
+  let autoEnableI = null
 
   // This continually probes the number of participants & screen size to ensure videos are max possible size regardless of window layout
   const gridUpdateLoop = () => {
@@ -231,6 +238,7 @@
 
   // Make the button to perform the toggle
   // This runs on a loop since you can join/leave the meeting repeatedly without changing the page
+  let firstRun = true
   setInterval(() => {
     // Find the UI elements we need to modify. If they don't exist we haven't entered the meeting yet and will try again later
     const participantVideo = document.querySelector('[data-allocation-index]')
@@ -303,6 +311,18 @@
       includeOwnVideoL.innerText = T('includeOwnVideo')
       includeOwnVideoL.prepend(includeOwnVideoI)
       additionalOptions.appendChild(includeOwnVideoL)
+
+      const autoEnableL = document.createElement('label')
+      autoEnableI = document.createElement('input')
+      autoEnableI.type = 'checkbox'
+      autoEnableI.checked = autoEnable
+      autoEnableI.onchange = e => {
+        autoEnable = e.target.checked
+        localStorage.setItem('gmgv-auto-enable', autoEnable)
+      }
+      autoEnableL.innerText = T('autoEnable')
+      autoEnableL.prepend(autoEnableI)
+      additionalOptions.appendChild(autoEnableL)
     }
 
     // Find the functions inside google meets code that we need to override for our functionality
@@ -347,6 +367,12 @@
           }
         }
       }
+    }
+
+    // Auto-enable
+    if (firstRun && container && buttons) {
+      firstRun = false
+      if (autoEnable) enableGrid()
     }
   }, 250)
 
@@ -582,6 +608,9 @@
             showOnlyVideo,
             highlightSpeaker,
             includeOwnVideo,
+            autoEnable,
+            languages: navigator.languages,
+            translations,
           })
           break
         case 'setEnabled':
@@ -613,6 +642,15 @@
         case 'setIncludeOwnVideo':
           includeOwnVideo = includeOwnVideoI.checked = event.data.value
           localStorage.setItem('gmgv-include-own-video', includeOwnVideo)
+          window.postMessage({
+            id: event.data.id,
+            sender: 'gmgv_user',
+            success: true,
+          })
+          break
+        case 'setAutoEnable':
+          autoEnable = autoEnableI.checked = event.data.value
+          localStorage.setItem('gmgv-auto-enable', autoEnable)
           window.postMessage({
             id: event.data.id,
             sender: 'gmgv_user',
