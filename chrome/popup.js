@@ -18,6 +18,8 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     document.querySelector('#highlight-speaker span').innerText = T('highlightSpeaker')
     document.querySelector('#include-own-video span').innerText = T('includeOwnVideo')
     document.querySelector('#auto-enable span').innerText = T('autoEnable')
+    document.querySelector('#screen-capture-mode span').innerText = T('screenCaptureMode')
+    document.querySelector('#screen-capture-mode small').innerText = T('screenCaptureModeDescription')
     document.querySelector('#source-code').innerText = T('sourceCode')
 
     if (!response.inMeeting) {
@@ -31,45 +33,40 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     document.querySelector('#highlight-speaker input').checked = response.highlightSpeaker
     document.querySelector('#include-own-video input').checked = response.includeOwnVideo
     document.querySelector('#auto-enable input').checked = response.autoEnable
+    document.querySelector('#screen-capture-mode input').checked = response.screenCaptureMode
 
+    const updateScreenCaptureMode = enabled => {
+      document.querySelector('#show-only-video input').checked = !enabled && response.showOnlyVideo
+      document.querySelector('#show-only-video input').disabled = enabled
+      document.querySelector('#show-only-video').classList.toggle('disabled', enabled)
+
+      document.querySelector('#highlight-speaker input').checked = !enabled && response.highlightSpeaker
+      document.querySelector('#highlight-speaker input').disabled = enabled
+      document.querySelector('#highlight-speaker').classList.toggle('disabled', enabled)
+    }
     const setDisabled = v => {
-      document.querySelector('#show-only-video').classList = v ? 'disabled' : ''
-      document.querySelector('#highlight-speaker').classList = v ? 'disabled' : ''
-      document.querySelector('#include-own-video').classList = v ? 'disabled' : ''
-      document.querySelector('#auto-enable').classList = v ? 'disabled' : ''
-      document.querySelector('#show-only-video input').disabled = v
-      document.querySelector('#highlight-speaker input').disabled = v
-      document.querySelector('#include-own-video input').disabled = v
-      document.querySelector('#auto-enable input').disabled = v
+      document.querySelectorAll('label:not(#enabled)').forEach(el => el.classList.toggle('disabled', v))
+      document.querySelectorAll('label:not(#enabled) input').forEach(el => (el.disabled = v))
+      if (!v) updateScreenCaptureMode(document.querySelector('#screen-capture-mode input').checked)
     }
 
     setDisabled(!response.enabled)
 
-    document.querySelector('#enabled input').onchange = e => {
-      chrome.tabs.sendMessage(tabs[0].id, { type: 'setEnabled', value: e.target.checked }, response => {
-        if (chrome.runtime.lastError || response.error) e.target.checked = !e.target.checked
-        setDisabled(!e.target.checked)
-      })
-    }
-    document.querySelector('#show-only-video input').onchange = e => {
-      chrome.tabs.sendMessage(tabs[0].id, { type: 'setShowOnlyVideo', value: e.target.checked }, response => {
-        if (chrome.runtime.lastError || response.error) e.target.checked = !e.target.checked
-      })
-    }
-    document.querySelector('#highlight-speaker input').onchange = e => {
-      chrome.tabs.sendMessage(tabs[0].id, { type: 'setHighlightSpeaker', value: e.target.checked }, response => {
-        if (chrome.runtime.lastError || response.error) e.target.checked = !e.target.checked
-      })
-    }
-    document.querySelector('#include-own-video input').onchange = e => {
-      chrome.tabs.sendMessage(tabs[0].id, { type: 'setIncludeOwnVideo', value: e.target.checked }, response => {
-        if (chrome.runtime.lastError || response.error) e.target.checked = !e.target.checked
-      })
-    }
-    document.querySelector('#auto-enable input').onchange = e => {
-      chrome.tabs.sendMessage(tabs[0].id, { type: 'setAutoEnable', value: e.target.checked }, response => {
-        if (chrome.runtime.lastError || response.error) e.target.checked = !e.target.checked
-      })
-    }
+    document.querySelectorAll('label').forEach(el => {
+      const titleCaseID = el.id
+        .split('-')
+        .map(s => s.charAt(0).toUpperCase() + s.slice(1))
+        .join('')
+      const name = titleCaseID.charAt(0).toLowerCase() + titleCaseID.slice(1)
+      const type = 'set' + titleCaseID
+      el.querySelector('input').onchange = e => {
+        chrome.tabs.sendMessage(tabs[0].id, { type, value: e.target.checked }, response => {
+          if (chrome.runtime.lastError || response.error) e.target.checked = !e.target.checked
+          response[name] = e.target.checked
+          if (name === 'enabled') setDisabled(!e.target.checked)
+          if (name === 'screenCaptureMode') updateScreenCaptureMode(e.target.checked)
+        })
+      }
+    })
   })
 })

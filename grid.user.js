@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.16
+// @version      1.17
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -31,6 +31,9 @@
       noMeeting: 'Grid View does not run until you join the meeting',
       enabled: 'Enable Grid View',
       sourceCode: 'Source Code available on Github',
+      screenCaptureMode: 'Enable Screen Capture Mode',
+      screenCaptureModeDescription: 'Forces 16:9, Disables names, Locks videos in place',
+      unauthorizedWarning: 'WARNING: This is an unauthorized extension. Please install the official release by clicking here.',
     },
     es: {
       showOnlyVideo: 'Unicamente mostrar participantes con video',
@@ -119,6 +122,15 @@
     .__gmgv-vid-container.__gmgv-chat-enabled {
       right: 325px !important;
     }
+    .__gmgv-vid-container.__gmgv-screen-capture-mode {
+      right: 325px !important;
+      bottom: 90px !important;
+      z-index: 10;
+      background: #111;
+    }
+    .__gmgv-vid-container.__gmgv-screen-capture-mode .__gmgv-screen-capture-mode-unknown-participant {
+      display: none;
+    }
     .__gmgv-vid-container > div {
       position: relative !important;
       margin-top: 0 !important;
@@ -141,10 +153,12 @@
 
       transition: opacity 300ms linear 500ms;
       opacity: 0;
+      z-index: -1;
     }
     .__gmgv-vid-container > div.__gmgv-speaking:after {
       transition: opacity 60ms linear;
       opacity: 1;
+      z-index: 1;
     }
     .__gmgv-button {
       overflow: visible !important;
@@ -161,6 +175,7 @@
       border-radius: 0 0 0 8px;
       text-align: left;
       cursor: auto;
+      line-height: 0;
     }
     .__gmgv-button:hover > div {
       display: block;
@@ -168,7 +183,25 @@
     .__gmgv-button > div label {
       display: block;
       line-height: 24px;
+      color: #999999;
+    }
+    .__gmgv-button > div label:not(.disabled) {
       cursor: pointer;
+      color: #000000;
+    }
+    .__gmgv-button > div label small {
+      display: block;
+      line-height: 12px;
+      font-weight: 400;
+    }
+    .__gmgv-button > div hr {
+      border: 0;
+      height: 1px;
+      background: #f1f3f4;
+    }
+    .__gmgv-button > div a {
+      display: inline-block;
+      line-height: 20px;
     }
   `
   document.body.append(s)
@@ -177,38 +210,61 @@
   let runInterval = null
   let container = null
   let pinnedIndex = -1
+  let screenCaptureModeAllocations = new Map() // participantID -> order index
+  let screenCaptureModeLookup = new Map() // `${name}|${presentation}|${dedupeID}` -> {id,active,order}
   let showOnlyVideo = localStorage.getItem('gmgv-show-only-video') === 'true'
   let highlightSpeaker = localStorage.getItem('gmgv-highlight-speaker') === 'true'
   let includeOwnVideo = localStorage.getItem('gmgv-include-own-video') === 'true'
   let autoEnable = localStorage.getItem('gmgv-auto-enable') === 'true'
+  let screenCaptureMode = localStorage.getItem('gmgv-screen-capture-mode') === 'true'
   let toggleButtonSVG = null
   let showOnlyVideoI = null
   let highlightSpeakerI = null
   let includeOwnVideoI = null
   let autoEnableI = null
+  let screenCaptureModeI = null
 
   // This continually probes the number of participants & screen size to ensure videos are max possible size regardless of window layout
   const gridUpdateLoop = () => {
-    const w = innerWidth / 16
-    const h = (innerHeight - 48) / 9
-    let n = container.children.length
-    if (pinnedIndex >= 0 && pinnedIndex < n) {
-      // Simulate having an extra quarter of videos so we can dedicate a quarter to the pinned video
-      n = Math.ceil((4 / 3) * (n - 1))
-    }
-    let size = 0
     let col
-    for (col = 1; col < 9; col++) {
-      let s = Math.min(w / col, h / Math.ceil(n / col))
-      if (s < size) {
-        col--
-        break
+    if (screenCaptureMode) {
+      col = Math.ceil(Math.sqrt(screenCaptureModeLookup.size))
+      const mul = Math.floor(Math.min((innerWidth - 327) / (col * 16), (innerHeight - 140) / (col * 9)))
+      container.style.marginLeft = `${innerWidth - 325 - mul * col * 16}px`
+      container.style.marginTop = `${innerHeight - 140 - mul * col * 9}px`
+    } else {
+      const w = innerWidth / 16
+      const h = (innerHeight - 50) / 9
+      let n = container.children.length
+      if (pinnedIndex >= 0 && pinnedIndex < n) {
+        // Simulate having an extra quarter of videos so we can dedicate a quarter to the pinned video
+        n = Math.ceil((4 / 3) * (n - 1))
       }
-      size = s
+      let size = 0
+      for (col = 1; col < 9; col++) {
+        let s = Math.min(w / col, h / Math.ceil(n / col))
+        if (s < size) {
+          col--
+          break
+        }
+        size = s
+      }
+      container.style.marginLeft = ''
+      container.style.marginTop = ''
     }
+    container.classList.toggle('__gmgv-screen-capture-mode', screenCaptureMode)
     container.style.gridTemplateColumns = `repeat(${col}, 1fr)`
+    container.style.gridTemplateRows = screenCaptureMode ? `repeat(${col}, 1fr)` : ''
     for (let v of container.children) {
-      if (+v.dataset.allocationIndex === pinnedIndex) {
+      if (screenCaptureMode) {
+        const unknown = !screenCaptureModeAllocations.has(v.dataset.requestedParticipantId)
+        v.classList.toggle('__gmgv-screen-capture-mode-unknown-participant', unknown)
+        v.style.order = ''
+        if (!unknown) {
+          const idx = screenCaptureModeAllocations.get(v.dataset.requestedParticipantId)
+          v.style.gridArea = `${1 + Math.floor(idx / col)} / ${1 + (idx % col)}` // row / column
+        }
+      } else if (+v.dataset.allocationIndex === pinnedIndex) {
         const span = Math.ceil(col / 2)
         v.style.order = -1
         v.style.gridArea = `span ${span} / span ${span}`
@@ -225,6 +281,8 @@
     runInterval = null
     container.classList.remove('__gmgv-vid-container')
     toggleButtonSVG.innerHTML = gridOff
+    container.style.marginLeft = ''
+    container.style.marginTop = ''
   }
   const enableGrid = () => {
     if (runInterval) clearInterval(runInterval)
@@ -238,6 +296,7 @@
 
   // Make the button to perform the toggle
   // This runs on a loop since you can join/leave the meeting repeatedly without changing the page
+  const authorized = (typeof GM !== 'undefined' && GM && GM.info && GM.info.script && GM.info.script.namespace === 'https://fugi.tech/') || (document.currentScript && document.currentScript.src === 'chrome-extension://kklailfgofogmmdlhgmjgenehkjoioip/grid.user.js')
   let firstRun = true
   setInterval(() => {
     // Find the UI elements we need to modify. If they don't exist we haven't entered the meeting yet and will try again later
@@ -323,6 +382,33 @@
       autoEnableL.innerText = T('autoEnable')
       autoEnableL.prepend(autoEnableI)
       additionalOptions.appendChild(autoEnableL)
+
+      additionalOptions.appendChild(document.createElement('hr'))
+
+      const screenCaptureModeL = document.createElement('label')
+      screenCaptureModeI = document.createElement('input')
+      screenCaptureModeI.type = 'checkbox'
+      screenCaptureModeI.checked = screenCaptureMode
+      screenCaptureModeI.onchange = e => {
+        updateScreenCaptureMode(e.target.checked)
+      }
+      screenCaptureModeL.innerText = T('screenCaptureMode')
+      screenCaptureModeL.prepend(screenCaptureModeI)
+      const screenCaptureModeS = document.createElement('small')
+      screenCaptureModeS.innerText = T('screenCaptureModeDescription')
+      screenCaptureModeL.append(screenCaptureModeS)
+      additionalOptions.appendChild(screenCaptureModeL)
+
+      const unauthorizedWarningA = document.createElement('a')
+      unauthorizedWarningA.target = '_blank'
+      unauthorizedWarningA.href = 'https://chrome.google.com/webstore/detail/google-meet-grid-view/kklailfgofogmmdlhgmjgenehkjoioip'
+      unauthorizedWarningA.innerText = T('unauthorizedWarning')
+      if(!authorized) {
+        additionalOptions.appendChild(document.createElement('hr'))
+        additionalOptions.appendChild(unauthorizedWarningA)
+      }
+
+      updateScreenCaptureMode(screenCaptureMode)
     }
 
     // Find the functions inside google meets code that we need to override for our functionality
@@ -485,7 +571,7 @@
     // but only if it hasn't already been added. Also run a callback if provided.
     const addUniqueVideoElem = (a, b, c) => {
       if (b && !a.some(e => e[magicKey] === b)) {
-        const d = new VideoElem(b, { attribution: true })
+        const d = new VideoElem(b, { attribution: !screenCaptureMode })
         if (c) c(d)
         a.push(d)
       }
@@ -552,14 +638,14 @@
     // Use the map & map keys we found earlier to add every participant
     let ret = []
     for (const v of videoKeys) {
-      addUniqueVideoElem(ret, videoMap.get(v), magicSet(2))
+      addUniqueVideoElem(ret, videoMap.get(v), magicSet(screenCaptureMode ? 0 : 2))
     }
     if (includeOwnVideo) {
-      addUniqueVideoElem(ret, ownVideo, magicSet(2))
+      addUniqueVideoElem(ret, ownVideo, magicSet(screenCaptureMode ? 0 : 2))
     }
 
     // If in only-video mode, remove any without video
-    if (showOnlyVideo) {
+    if (showOnlyVideo && !screenCaptureMode) {
       // ret[idx][magicKey].wr.Aa.Aa.Ca.Ea.Ws.Ea.state // mu (no) li (yes)
       const tests = [/\.call\(this\)/, /\.call\(this,.*,"a"\)/, /new Set;this\.\w+=new _/, /new Map.*new Set/, /"un".*"li"/, /new Map/, /Object/]
       ret = ret.filter(e => {
@@ -589,8 +675,61 @@
       pinnedIndex = ret.findIndex(v => !!v[magicKey].parent)
     }
 
+    // Allocate slots for screen capture mode
+    if (screenCaptureMode) {
+      const activeIDs = new Set(ret.map(v => v[magicKey].getId()))
+
+      screenCaptureModeLookup.forEach(v => {
+        v.active = activeIDs.has(v.id)
+      })
+
+      ret.forEach(v => {
+        const participant = v[magicKey]
+        const id = participant.getId()
+        const name = participant.getName()
+        const presenting = !!participant.parent
+
+        if (screenCaptureModeAllocations.has(id)) return
+
+        for (let dedupeID = 0; dedupeID <= screenCaptureModeLookup.size; dedupeID++) {
+          const key = `${name}|${presenting}|${dedupeID}`
+          let l = screenCaptureModeLookup.get(key)
+          if (l && l.active && l.id !== id) continue
+          if (!l) l = { order: screenCaptureModeLookup.size }
+          l.active = true
+          l.id = id
+          screenCaptureModeLookup.set(key, l)
+          screenCaptureModeAllocations.set(id, l.order)
+          return
+        }
+      })
+
+      for (let id of screenCaptureModeAllocations.keys()) {
+        if (!activeIDs.has(id)) screenCaptureModeAllocations.delete(id)
+      }
+    }
+
     // Build a video list from the ordered output
     return new VideoList(ret)
+  }
+
+  function updateScreenCaptureMode(enabled) {
+    screenCaptureMode = screenCaptureModeI.checked = enabled
+    localStorage.setItem('gmgv-screen-capture-mode', screenCaptureMode)
+
+    showOnlyVideoI.checked = !enabled && showOnlyVideo
+    showOnlyVideoI.disabled = enabled
+    showOnlyVideoI.parentElement.classList.toggle('disabled', enabled)
+
+    highlightSpeakerI.checked = !enabled && highlightSpeaker
+    highlightSpeakerI.disabled = enabled
+    highlightSpeakerI.parentElement.classList.toggle('disabled', enabled)
+
+    // Reset the mappings to reduce clutter on toggle
+    if (!enabled) {
+      screenCaptureModeAllocations = new Map()
+      screenCaptureModeLookup = new Map()
+    }
   }
 
   // Extension communication
@@ -609,6 +748,7 @@
             highlightSpeaker,
             includeOwnVideo,
             autoEnable,
+            screenCaptureMode,
             languages: navigator.languages,
             translations,
           })
@@ -651,6 +791,14 @@
         case 'setAutoEnable':
           autoEnable = autoEnableI.checked = event.data.value
           localStorage.setItem('gmgv-auto-enable', autoEnable)
+          window.postMessage({
+            id: event.data.id,
+            sender: 'gmgv_user',
+            success: true,
+          })
+          break
+        case 'setScreenCaptureMode':
+          updateScreenCaptureMode(event.data.value)
           window.postMessage({
             id: event.data.id,
             sender: 'gmgv_user',

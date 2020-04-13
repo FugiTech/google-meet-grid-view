@@ -29,17 +29,26 @@ body.no-meeting #no-meeting {
 body.in-meeting #enabled,
 body.in-meeting #show-only-video,
 body.in-meeting #highlight-speaker,
-body.in-meeting #include-own-video ,
-body.in-meeting #auto-enable {
+body.in-meeting #include-own-video,
+body.in-meeting #auto-enable,
+body.in-meeting #screen-capture-mode {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
 }
 body #source-code {
   display: block;
 }
+label {
+  color: #999999;
+}
 label:not(.disabled) {
   cursor: pointer;
+  color: #000000;
 }
 input {
   margin-right: 8px;
+}
+small {
+  margin-top: 3px;
 }
