@@ -324,8 +324,9 @@
   // Make the button to perform the toggle
   // This runs on a loop since you can join/leave the meeting repeatedly without changing the page
   const authorized =
-    (typeof GM !== 'undefined' && GM && GM.info && GM.info.script && GM.info.script.namespace === 'https://fugi.tech/') ||
-    (document.currentScript && document.currentScript.src === 'chrome-extension://kklailfgofogmmdlhgmjgenehkjoioip/grid.user.js')
+    (typeof GM !== 'undefined' && GM && GM.info && GM.info.script && GM.info.script.namespace === 'https://fugi.tech/') || // user script
+    (document.currentScript && document.currentScript.src === 'chrome-extension://kklailfgofogmmdlhgmjgenehkjoioip/grid.user.js') || // chrome web store
+    (document.currentScript && document.currentScript.src === 'chrome-extension://ogbbehbkcmdciebilbkpjgopohnpfolj/grid.user.js') // microsoft store
   let firstRun = true
   setInterval(() => {
     // Find the UI elements we need to modify. If they don't exist we haven't entered the meeting yet and will try again later
