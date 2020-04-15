@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.17
+// @version      1.18
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -54,6 +54,14 @@
       showOnlyVideo: 'Mostra solo i partecipanti con la fotocamera attiva',
       highlightSpeaker: 'Illumina chi sta parlando',
       includeOwnVideo: 'Includi te stesso nella griglia',
+      autoEnable: 'Attiva sempre la griglia',
+      notRunning: 'Grid View non funziona in questa pagina',
+      noMeeting: 'Grid View non funziona se non sei connesso',
+      enabled: 'Attiva Grid View',
+      sourceCode: 'Il codice sorgente è disponibile su Github',
+      screenCaptureMode: 'Attiva la modalià registrazione della schermata',
+      screenCaptureModeDescription: 'Forza 16:9, Disattiva i nomi, Blocca i video nella posizione',
+      unauthorizedWarning: 'ATTENZIONE: Questa estensione non è autorizzata. Installa la versione ufficiale cliccando qua.',
     },
     ja: {
       showOnlyVideo: 'カメラをオンにしている参加者のみ',
@@ -64,6 +72,13 @@
       showOnlyVideo: 'Toon alleen deelnemers met video',
       highlightSpeaker: 'Highlight sprekers',
       includeOwnVideo: 'Toon jezelf in het raster',
+      autoEnable: 'Raster standaard automatisch inschakelen',
+      notRunning: 'Het raster staat niet aan op deze pagina',
+      noMeeting: 'Het raster is pas zichtbaar als er aan een meeting wordt deelgenomen',
+      enabled: 'Zet het raster aan',
+      sourceCode: 'Broncode is beschikbaar op Github',
+      screenCaptureMode: 'Zet Screen Capture Mode aan',
+      screenCaptureModeDescription: "Forceer 16:9, Schakel namen uit, Zet video's vast op hun plek",
     },
     pl: {
       showOnlyVideo: 'Pokaż tylko uczestników z wideo',
@@ -74,6 +89,14 @@
       showOnlyVideo: 'Mostrar somente participantes com vídeo',
       highlightSpeaker: 'Destacar quem está falando',
       includeOwnVideo: 'Incluir meu vídeo no grid',
+      autoEnable: 'Habilitar visualização em grid por padrão',
+      notRunning: 'Visualização em grid não está habilitado nesta página',
+      noMeeting: 'Visualização em grid não funciona até que vocie entre em uma conferência',
+      enabled: 'Habilitar visualização em grid',
+      sourceCode: 'Código fonte disponível no Github',
+      screenCaptureMode: 'Habilitar captura de tela',
+      screenCaptureModeDescription: 'Forçar aspecto 16:9, Desabilitar nomes, Travar posição dos vídeos',
+      unauthorizedWarning: 'ATENÇÃO: Esta é uma extensão não autorizada. Por favor, instale a versão oficial clicando aqui.',
     },
     sv: {
       showOnlyVideo: 'Visa endast deltagare med video',
@@ -155,7 +178,11 @@
       opacity: 0;
       z-index: -1;
     }
-    .__gmgv-vid-container > div.__gmgv-speaking:after {
+    .__gmgv-vid-container > div > div:first-child,
+    .__gmgv-vid-container > div > div:nth-child(2) {
+      z-index: -2;
+    }
+    .__gmgv-vid-container:not(.__gmgv-screen-capture-mode) > div.__gmgv-speaking:after {
       transition: opacity 60ms linear;
       opacity: 1;
       z-index: 1;
@@ -233,7 +260,7 @@
       container.style.marginLeft = `${innerWidth - 325 - mul * col * 16}px`
       container.style.marginTop = `${innerHeight - 140 - mul * col * 9}px`
     } else {
-      const w = innerWidth / 16
+      const w = innerWidth / 14
       const h = (innerHeight - 50) / 9
       let n = container.children.length
       if (pinnedIndex >= 0 && pinnedIndex < n) {
@@ -296,7 +323,9 @@
 
   // Make the button to perform the toggle
   // This runs on a loop since you can join/leave the meeting repeatedly without changing the page
-  const authorized = (typeof GM !== 'undefined' && GM && GM.info && GM.info.script && GM.info.script.namespace === 'https://fugi.tech/') || (document.currentScript && document.currentScript.src === 'chrome-extension://kklailfgofogmmdlhgmjgenehkjoioip/grid.user.js')
+  const authorized =
+    (typeof GM !== 'undefined' && GM && GM.info && GM.info.script && GM.info.script.namespace === 'https://fugi.tech/') ||
+    (document.currentScript && document.currentScript.src === 'chrome-extension://kklailfgofogmmdlhgmjgenehkjoioip/grid.user.js')
   let firstRun = true
   setInterval(() => {
     // Find the UI elements we need to modify. If they don't exist we haven't entered the meeting yet and will try again later
@@ -311,6 +340,7 @@
     const buttons = ownVideoPreview && ownVideoPreview.parentElement.parentElement.parentElement
     if (buttons && !buttons.__grid_ran) {
       buttons.__grid_ran = true
+      buttons.parentElement.parentElement.style.zIndex = 10
 
       // Find the button container element and copy the divider
       buttons.prepend(buttons.children[1].cloneNode())
@@ -403,7 +433,7 @@
       unauthorizedWarningA.target = '_blank'
       unauthorizedWarningA.href = 'https://chrome.google.com/webstore/detail/google-meet-grid-view/kklailfgofogmmdlhgmjgenehkjoioip'
       unauthorizedWarningA.innerText = T('unauthorizedWarning')
-      if(!authorized) {
+      if (!authorized) {
         additionalOptions.appendChild(document.createElement('hr'))
         additionalOptions.appendChild(unauthorizedWarningA)
       }
@@ -451,6 +481,14 @@
             p.__grid_ran = true
             window.default_MeetingsUi[_k] = p
           }
+
+          m = /\.([A-Za-z]+)\.get\(.*window\.innerWidth,window\.innerHeight\)\);[A-Za-z]+=[A-Za-z]+\.([A-Za-z]+)\(/.exec(v.toString())
+          if (m) {
+            console.log('[google-meet-grid-view] Successfully hooked into rendering pipeline v2', v)
+            const p = new Proxy(v, RefreshVideoProxyHandlerV2(m[1], m[2]))
+            p.__grid_ran = true
+            window.default_MeetingsUi[_k] = p
+          }
         }
       }
     }
@@ -476,6 +514,18 @@
       },
     }
   }
+  function RefreshVideoProxyHandlerV2(objKey, funcKey) {
+    return {
+      apply: function (target, thisArg, argumentsList) {
+        if (!argumentsList[0][objKey].__grid_ran) {
+          const p = new Proxy(argumentsList[0][objKey], LayoutVideoProxyHandler(argumentsList[0], funcKey))
+          p.__grid_ran = true
+          argumentsList[0][objKey] = p
+        }
+        return target.apply(thisArg, argumentsList)
+      },
+    }
+  }
 
   // This overrides the Map that returns which layout to use, as called by the above Proxy
   // If grid view is enabled we always try to call our custom layout function.
@@ -490,12 +540,12 @@
 
         if (runInterval && name == 'get') {
           return idx => ({
-            [funcKey]: input => {
+            [funcKey]: (videoOrdering, windowData) => {
               try {
-                return GridLayout.call(parent, input)
+                return GridLayout.call(parent, videoOrdering, windowData)
               } catch (e) {
                 console.error(e)
-                return ret(idx)[funcKey](input)
+                return ret(idx)[funcKey](videoOrdering, windowData)
               }
             },
           })
