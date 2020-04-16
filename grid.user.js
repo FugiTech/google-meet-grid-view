@@ -67,6 +67,9 @@
       showOnlyVideo: 'カメラをオンにしている参加者のみ',
       highlightSpeaker: '発言者をハイライト',
       includeOwnVideo: '自分を含める',
+      autoEnable: '初期状態でグリッド表示を有効化',
+      screenCaptureMode: '画面キャプチャモードを有効化',
+      screenCaptureModeDescription: '画面比率を16:9, 名前を非表示, ビデオの位置を固定にします。',
     },
     nl: {
       showOnlyVideo: 'Toon alleen deelnemers met video',
