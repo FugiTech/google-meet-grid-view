@@ -1,18 +1,20 @@
 // Pass state between browser action & injected script
 const inFlightRequests = new Map()
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+browser.runtime.onMessage.addListener(message => {
   const id = +new Date()
-  inFlightRequests.set(id, sendResponse)
+  const p = new Promise(resolve => {
+    inFlightRequests.set(id, resolve)
+  })
   window.postMessage({
     id,
     sender: 'gmgv_content',
-    ...message
+    ...message,
   })
-  return true
+  return p
 })
 
-window.addEventListener("message", event => {
+window.addEventListener('message', event => {
   if (event.source !== window) return // Only accept messages from ourselves
   if (event.data.sender !== 'gmgv_user') return
   const sendResponse = inFlightRequests.get(event.data.id)
@@ -24,5 +26,5 @@ window.addEventListener("message", event => {
 
 // Add our user script
 var s = document.createElement('script')
-s.src = chrome.extension.getURL('grid.user.js')
+s.src = 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/grid.user.min.js'
 document.body.appendChild(s)

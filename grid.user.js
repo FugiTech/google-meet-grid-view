@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.18
+// @version      1.19
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -16,6 +16,19 @@
       showOnlyVideo: 'Mostra només els participants amb video',
       highlightSpeaker: 'Ressalta el que parla',
       includeOwnVideo: 'Inclou el meu video a la graella',
+    },
+    da: {
+      showOnlyVideo: 'Vis kun deltagere med video',
+      highlightSpeaker: 'Fokus på talene personer',
+      includeOwnVideo: 'Vis mig selv i Grid',
+      autoEnable: 'Tænd for Grid automatisk',
+      notRunning: 'Grid View kører ikke på denne side',
+      noMeeting: 'Grid View kører ikke indtil du deltager i et møde',
+      enabled: 'Aktiver Grid View',
+      sourceCode: 'Kildekoden er tilgøngelig på Github',
+      screenCaptureMode: 'Aktiver skærmoptager',
+      screenCaptureModeDescription: 'Gennemtvinger 16:9, Deaktiverer navne, Låser video-positioner',
+      unauthorizedWarning: 'Advarsel: Dette er ikke en autoriseret tilføjelse. Installer venligst den officielle, ved at klikke her.',
     },
     de: {
       showOnlyVideo: 'Nur Teilnehmer mit Video anzeigen',
@@ -39,6 +52,14 @@
       showOnlyVideo: 'Unicamente mostrar participantes con video',
       highlightSpeaker: 'Resaltar participantes',
       includeOwnVideo: 'Incluir mi video en el grid',
+      autoEnable: 'Habilitar grid view por defect',
+      notRunning: 'Grid View no funciona en esta página',
+      noMeeting: 'Grid View no funciona hasta que no estés en una reunión',
+      enabled: 'Habilitar Grid View',
+      sourceCode: 'Código fuente disponible en Github',
+      screenCaptureMode: 'Habilitar modo captura de pantalla',
+      screenCaptureModeDescription: 'Forzar 16:9, Deshabilita nombres, Fija el video en su lugar',
+      unauthorizedWarning: 'ATENCIÓN: Esta es una extensión no autorizada. Por favor, instale la versión oficial haciendo click aquí.',
     },
     fr: {
       showOnlyVideo: 'Ne montrer que les participants avec caméra',
@@ -102,6 +123,14 @@
       showOnlyVideo: 'Visa endast deltagare med video',
       highlightSpeaker: 'Markera/följ talare',
       includeOwnVideo: 'Inkludera mig i rutnätet',
+      autoEnable: 'Använd rutnätet som standard',
+      notRunning: 'Rutnätet körs inte på denna sidan',
+      noMeeting: 'Grid View körs inte till dess att du har gått med i mötet',
+      enabled: 'Slå på rutnätet',
+      sourceCode: 'Källkod tillgänglig på Github',
+      screenCaptureMode: 'Slå på skärminspelnings läge',
+      screenCaptureModeDescription: 'Tvingar 16:9, Inaktiverar namn, Låser videor på plats',
+      unauthorizedWarning: 'VARNING: Detta är inte ett auktoriserat tillägg. Installera det officiella tillägget genom att klicka här.',
     },
     uk: {
       showOnlyVideo: 'Показати лише учасників з відео',
@@ -325,8 +354,7 @@
   // This runs on a loop since you can join/leave the meeting repeatedly without changing the page
   const authorized =
     (typeof GM !== 'undefined' && GM && GM.info && GM.info.script && GM.info.script.namespace === 'https://fugi.tech/') || // user script
-    (document.currentScript && document.currentScript.src === 'chrome-extension://kklailfgofogmmdlhgmjgenehkjoioip/grid.user.js') || // chrome web store
-    (document.currentScript && document.currentScript.src === 'chrome-extension://ogbbehbkcmdciebilbkpjgopohnpfolj/grid.user.js') // microsoft store
+    (document.currentScript && document.currentScript.src === 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/grid.user.min.js') // extension
   let firstRun = true
   setInterval(() => {
     // Find the UI elements we need to modify. If they don't exist we haven't entered the meeting yet and will try again later
@@ -432,7 +460,7 @@
 
       const unauthorizedWarningA = document.createElement('a')
       unauthorizedWarningA.target = '_blank'
-      unauthorizedWarningA.href = 'https://chrome.google.com/webstore/detail/google-meet-grid-view/kklailfgofogmmdlhgmjgenehkjoioip'
+      unauthorizedWarningA.href = 'https://github.com/Fugiman/google-meet-grid-view'
       unauthorizedWarningA.innerText = T('unauthorizedWarning')
       if (!authorized) {
         additionalOptions.appendChild(document.createElement('hr'))

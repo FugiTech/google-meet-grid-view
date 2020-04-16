@@ -6,6 +6,9 @@ body {
   font-family: 'Roboto', 'LocalRoboto', 'Helvetica Neue', 'Helvetica', 'sans-serif';
   background: #eeeeee;
   padding: 2px 0 3px 0;
+  width: min-content;
+  overflow: hidden;
+  font-size: 12px;
 }
 body > * {
   white-space: nowrap;
