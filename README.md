@@ -10,7 +10,9 @@ Userscript (works on Chrome & Firefox): https://greasyfork.org/en/scripts/397862
 
 Chrome Extension: https://chrome.google.com/webstore/detail/kklailfgofogmmdlhgmjgenehkjoioip
 
-Firefox Extension: https://addons.mozilla.org/en-US/firefox/addon/google-meet-gridview
+Firefox Add-on: https://addons.mozilla.org/en-US/firefox/addon/google-meet-gridview
+
+Microsoft Edge Extension: https://microsoftedge.microsoft.com/addons/detail/ogbbehbkcmdciebilbkpjgopohnpfolj
 
 ## Privacy Policy
 

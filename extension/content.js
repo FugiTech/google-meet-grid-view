@@ -26,5 +26,5 @@ window.addEventListener('message', event => {
 
 // Add our user script
 var s = document.createElement('script')
-s.src = 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/grid.user.min.js'
+s.src = browser.extension.getURL('grid.user.js')
 document.body.appendChild(s)

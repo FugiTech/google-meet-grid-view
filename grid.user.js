@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.19
+// @version      1.20
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -34,6 +34,14 @@
       showOnlyVideo: 'Nur Teilnehmer mit Video anzeigen',
       highlightSpeaker: 'Sprecher hervorheben',
       includeOwnVideo: 'Mich im Raster anzeigen',
+      autoEnable: 'Rasteransicht automatisch aktivieren',
+      notRunning: 'Rasteransicht ist für diese Seite nicht aktiv',
+      noMeeting: 'Rasteransicht ist solange nicht aktiv, bis Sie dem Meeting beitreten',
+      enabled: 'Rasteransicht anschalten',
+      sourceCode: 'Der Quellcode ist auf Github zugänglich',
+      screenCaptureMode: 'Aktiviere Bildschirmaufnahme Modus',
+      screenCaptureModeDescription: 'Erwingt 16:9, entfernt Namen, fixiert Video Position',
+      unauthorizedWarning: 'WARNUNG: Dieses ist eine nicht autorisiert Erweiterung. Bitte installieren Sie die offizielle Version, klicken Sie dafür hier.',
     },
     en: {
       showOnlyVideo: 'Only show participants with video',
@@ -65,6 +73,14 @@
       showOnlyVideo: 'Ne montrer que les participants avec caméra',
       highlightSpeaker: 'Surligner ceux qui parlent',
       includeOwnVideo: 'Vous inclure dans la grille',
+      autoEnable: 'Activer la vue grille par défaut',
+      notRunning: 'La vue grille ne fonctionne pas sur cette page',
+      noMeeting: 'La vue grille ne fonctionne pas tant que vous ne rejoignez pas de réunion',
+      enabled: 'Activer la vue grille',
+      sourceCode: 'Code source disponible sur Github',
+      screenCaptureMode: "Activer le mode capture d'écran",
+      screenCaptureModeDescription: "Force l'affichage 16:9, désactive les noms, vérrouille les positions des vidéos",
+      unauthorizedWarning: "ATTENTION : Il s'agit d'une extension non autorisée. Installez la version officielle en cliquant ici.",
     },
     hr: {
       showOnlyVideo: 'Prikaži samo sudionike sa kamerom',
@@ -88,6 +104,9 @@
       showOnlyVideo: 'カメラをオンにしている参加者のみ',
       highlightSpeaker: '発言者をハイライト',
       includeOwnVideo: '自分を含める',
+      autoEnable: '初期状態でグリッド表示を有効化',
+      screenCaptureMode: '画面キャプチャモードを有効化',
+      screenCaptureModeDescription: '画面比率を16:9, 名前を非表示, ビデオの位置を固定にします。',
     },
     nl: {
       showOnlyVideo: 'Toon alleen deelnemers met video',
@@ -353,8 +372,11 @@
   // Make the button to perform the toggle
   // This runs on a loop since you can join/leave the meeting repeatedly without changing the page
   const authorized =
-    (typeof GM !== 'undefined' && GM && GM.info && GM.info.script && GM.info.script.namespace === 'https://fugi.tech/') || // user script
-    (document.currentScript && document.currentScript.src === 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/grid.user.min.js') // extension
+    (document.currentScript && document.currentScript.src === 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/grid.user.min.js') || // v1.19 TODO: remove if/when it's rejected by Google
+    (document.currentScript && document.currentScript.src === 'chrome-extension://kklailfgofogmmdlhgmjgenehkjoioip/grid.user.js') || // Chrome
+    (document.currentScript && document.currentScript.src === 'chrome-extension://ogbbehbkcmdciebilbkpjgopohnpfolj/grid.user.js') || // Microsoft
+    (document.currentScript && document.currentScript.src === 'moz-extension://c972dc04-3d8e-4455-8316-6030a823a7e6/grid.user.js') || // Firefox
+    (typeof GM !== 'undefined' && GM && GM.info && GM.info.script && GM.info.script.namespace === 'https://fugi.tech/') // user script
   let firstRun = true
   setInterval(() => {
     // Find the UI elements we need to modify. If they don't exist we haven't entered the meeting yet and will try again later
