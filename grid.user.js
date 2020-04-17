@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.21
+// @version      1.22
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -418,7 +418,8 @@
       const buttons = ownVideoPreview && ownVideoPreview.parentElement.parentElement.parentElement
       if (buttons && !buttons.__grid_ran) {
         buttons.__grid_ran = true
-        buttons.parentElement.parentElement.style.zIndex = 10
+        buttons.parentElement.parentElement.style.zIndex = 10 // Prevent options getting cut off by pin/mute overlay
+        buttons.parentElement.style.zIndex = 2 // Prevent options getting cut off by speaker
 
         // Find the button container element and copy the divider
         buttons.prepend(buttons.children[1].cloneNode())
