@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.22
+// @version      1.23
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -15,14 +15,15 @@
     // If imported, export the translation factory
     window.TranslationFactory = TranslationFactory
   } else if (typeof unsafeWindow !== 'undefined') {
-    // If running in a sandbox, break out of the sandbox
-    const s = document.createElement('script')
-    s.setAttribute('nonce', unsafeWindow._F_getIjData().csp_nonce)
-    s.innerHTML = `(function(){
+    // If running in a sandbox, break out of the sandbox`(function(){
+    const scriptData = `(function(){
       Main();
       ${TranslationFactory.toString()};
       ${Main.toString()};
     })()`
+
+    const s = document.createElement('script')
+    s.src = URL.createObjectURL(new Blob([scriptData], { type: 'text/javascript' }))
     document.body.appendChild(s)
   } else {
     // Otherwise we're running as an unsandboxed user script
@@ -34,8 +35,16 @@
     const translations = {
       ca: {
         showOnlyVideo: 'Mostra només els participants amb video',
-        highlightSpeaker: 'Ressalta el que parla',
+        highlightSpeaker: 'Ressalta els que parlen',
         includeOwnVideo: 'Inclou el meu video a la graella',
+        autoEnable: 'Habilita la vista en graella de manera predeterminada',
+        notRunning: "La vista en graella no s'està executant en aquesta pàgina",
+        noMeeting: "La vista en graella no s'executarà fins que no et connectis a una trucada",
+        enabled: 'Activar vista en graella',
+        sourceCode: 'Codi font disponible a Github',
+        screenCaptureMode: 'Activar mode de captura',
+        screenCaptureModeDescription: 'Força 16:9, desactiva els noms, bloqueja vídeos al seu lloc',
+        unauthorizedWarning: "ATENCIÓ: es tracta d'una extensió no autoritzada. Instal·leu l'extensió oficial fent clic aquí.",
       },
       da: {
         showOnlyVideo: 'Vis kun deltagere med video',
@@ -77,17 +86,17 @@
         unauthorizedWarning: 'WARNING: This is an unauthorized extension. Please install the official release by clicking here.',
       },
       es: {
-        showOnlyVideo: 'Unicamente mostrar participantes con video',
-        highlightSpeaker: 'Resaltar participantes',
-        includeOwnVideo: 'Incluir mi video en el grid',
-        autoEnable: 'Habilitar grid view por defect',
-        notRunning: 'Grid View no funciona en esta página',
-        noMeeting: 'Grid View no funciona hasta que no estés en una reunión',
-        enabled: 'Habilitar Grid View',
+        showOnlyVideo: 'Mostrar solo participantes con vídeo',
+        highlightSpeaker: 'Resaltar los que hablan',
+        includeOwnVideo: 'Incluir mi vídeo en la cuadrícula',
+        autoEnable: 'Habilitar vista en cuadrícula por defecto',
+        notRunning: 'La vista en cuadrícula no funciona en esta página',
+        noMeeting: 'La vista en cuadrícula no funciona hasta que no estés en una llamada',
+        enabled: 'Habilitar vista en cuadrícula',
         sourceCode: 'Código fuente disponible en Github',
         screenCaptureMode: 'Habilitar modo captura de pantalla',
-        screenCaptureModeDescription: 'Forzar 16:9, Deshabilita nombres, Fija el video en su lugar',
-        unauthorizedWarning: 'ATENCIÓN: Esta es una extensión no autorizada. Por favor, instale la versión oficial haciendo click aquí.',
+        screenCaptureModeDescription: 'Forzar 16:9, deshabilita nombres, fija el vídeo en su lugar',
+        unauthorizedWarning: 'ATENCIÓN: Esta es una extensión no autorizada. Por favor, instale la versión oficial haciendo clic aquí.',
       },
       fr: {
         showOnlyVideo: 'Ne montrer que les participants avec caméra',
@@ -146,6 +155,19 @@
         includeOwnVideo: 'Uwzględnij siebie',
       },
       pt: {
+        showOnlyVideo: 'Mostrar apenas participantes com vídeo',
+        highlightSpeaker: 'Realçar quem está a falar',
+        includeOwnVideo: 'Incluir o meu vídeo na grelha',
+        autoEnable: 'Ativar visualização em grelha por defeito',
+        notRunning: 'Visualização em grelha não está activada nesta página',
+        noMeeting: 'Visualização em grelha não funciona até que entre numa conferência',
+        enabled: 'Ativar visualização em grelha',
+        sourceCode: 'Código fonte disponível no Github',
+        screenCaptureMode: 'Ativar captura de ecrã',
+        screenCaptureModeDescription: 'Forçar aspeto 16:9, Remover nomes, Parar posição dos vídeos',
+        unauthorizedWarning: 'ATENÇÃO: Esta é uma extensão não autorizada. Por favor, clique aqui para instalar a versão oficial.',
+      },
+      'pt-BR': {
         showOnlyVideo: 'Mostrar somente participantes com vídeo',
         highlightSpeaker: 'Destacar quem está falando',
         includeOwnVideo: 'Incluir meu vídeo no grid',
