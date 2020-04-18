@@ -17,8 +17,13 @@
   ) {
     // If imported, export the translation factory
     window.TranslationFactory = TranslationFactory
+  } else if (document.currentScript && document.currentScript.src === 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/grid.user.min.js') {
+    // We're running the cached CDN version, load the uncached version (rotates hourly)
+    const s = document.createElement('script')
+    s.src = 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/grid.user.min.js?t=' + Math.floor(new Date() / 3600000)
+    document.body.appendChild(s)
   } else if (typeof unsafeWindow !== 'undefined') {
-    // If running in a sandbox, break out of the sandbox`(function(){
+    // If running in a sandbox, break out of the sandbox
     const scriptData = `(function(){
       Main();
       ${TranslationFactory.toString()};
@@ -424,7 +429,7 @@
     // Make the button to perform the toggle
     // This runs on a loop since you can join/leave the meeting repeatedly without changing the page
     const authorized =
-      (document.currentScript && document.currentScript.src === 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/grid.user.min.js') || // v1.19 TODO: remove if/when it's rejected by Google
+      (document.currentScript && document.currentScript.src.startsWith('https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/grid.user.min.js')) || // v1.19
       (document.currentScript && document.currentScript.src === 'chrome-extension://kklailfgofogmmdlhgmjgenehkjoioip/grid.user.js') || // Chrome
       (document.currentScript && document.currentScript.src === 'chrome-extension://ogbbehbkcmdciebilbkpjgopohnpfolj/grid.user.js') || // Microsoft
       (document.currentScript && document.currentScript.src.startsWith('moz-extension://')) || // Firefox regenerates the URL for each browser, so we can't detect if it's valid :(

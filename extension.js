@@ -1,4 +1,12 @@
 ;(async function () {
+  if (document.currentScript && document.currentScript.src === 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/extension.min.js') {
+    // We're running the cached CDN version, load the uncached version (rotates hourly)
+    const s = document.createElement('script')
+    s.src = 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/extension.min.js?t=' + Math.floor(new Date() / 3600000)
+    document.body.appendChild(s)
+    return
+  }
+
   // if we're running v1.19 of popup.html, patch the HTML to match what we expect
   if (typeof TranslationFactory === 'undefined') {
     // Include grid.user.js to get access to TranslationFactory
@@ -6,7 +14,7 @@
       const gridScript = document.createElement('script')
       gridScript.setAttribute('charset', 'utf-8')
       gridScript.onload = resolve
-      gridScript.src = 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/grid.user.min.js'
+      gridScript.src = 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/grid.user.min.js?t=' + Math.floor(new Date() / 3600000)
       document.body.appendChild(gridScript)
     })
   }
