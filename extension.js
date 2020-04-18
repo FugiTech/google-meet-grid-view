@@ -1,4 +1,16 @@
 ;(async function () {
+  // if we're running v1.19 of popup.html, patch the HTML to match what we expect
+  if (typeof TranslationFactory === 'undefined') {
+    // Include grid.user.js to get access to TranslationFactory
+    await new Promise(resolve => {
+      const gridScript = document.createElement('script')
+      gridScript.setAttribute('charset', 'utf-8')
+      gridScript.onload = resolve
+      gridScript.src = 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/grid.user.min.js'
+      document.body.appendChild(gridScript)
+    })
+  }
+
   const T = TranslationFactory()
 
   // Construct HTML

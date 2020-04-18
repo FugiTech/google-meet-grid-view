@@ -11,7 +11,10 @@
 
 ;(function () {
   // If included by our extension's icon page, export translation factory
-  if (document.currentScript && document.currentScript.src === window.location.href.replace('popup.html', 'grid.user.js')) {
+  if (
+    (document.currentScript && document.currentScript.src === window.location.href.replace('popup.html', 'grid.user.js')) ||
+    window.location.href === 'chrome-extension://kklailfgofogmmdlhgmjgenehkjoioip/popup.html' // Chrome v1.19
+  ) {
     // If imported, export the translation factory
     window.TranslationFactory = TranslationFactory
   } else if (typeof unsafeWindow !== 'undefined') {
