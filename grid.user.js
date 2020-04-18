@@ -21,6 +21,7 @@
     // We're running the cached CDN version, load the uncached version (rotates hourly)
     const s = document.createElement('script')
     s.src = 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/grid.user.js?t=' + Math.floor(new Date() / 3600000)
+    s.setAttribute("nonce", window._F_getIjData().csp_nonce)
     document.body.appendChild(s)
   } else if (typeof unsafeWindow !== 'undefined') {
     // If running in a sandbox, break out of the sandbox
