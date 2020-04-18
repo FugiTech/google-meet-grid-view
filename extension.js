@@ -2,7 +2,7 @@
   if (document.currentScript && document.currentScript.src === 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/extension.min.js') {
     // We're running the cached CDN version, load the uncached version (rotates hourly)
     const s = document.createElement('script')
-    s.src = 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/extension.min.js?t=' + Math.floor(new Date() / 3600000)
+    s.src = 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/extension.js?t=' + Math.floor(new Date() / 3600000)
     document.body.appendChild(s)
     return
   }
@@ -14,7 +14,7 @@
       const gridScript = document.createElement('script')
       gridScript.setAttribute('charset', 'utf-8')
       gridScript.onload = resolve
-      gridScript.src = 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/grid.user.min.js?t=' + Math.floor(new Date() / 3600000)
+      gridScript.src = 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/grid.user.js?t=' + Math.floor(new Date() / 3600000)
       document.body.appendChild(gridScript)
     })
   }
