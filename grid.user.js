@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.23
+// @version      1.24
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -21,7 +21,7 @@
     // We're running the cached CDN version, load the uncached version (rotates hourly)
     const s = document.createElement('script')
     s.src = 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/grid.user.js?t=' + Math.floor(new Date() / 3600000)
-    s.setAttribute("nonce", window._F_getIjData().csp_nonce)
+    s.setAttribute('nonce', window._F_getIjData().csp_nonce)
     document.body.appendChild(s)
   } else if (typeof unsafeWindow !== 'undefined') {
     // If running in a sandbox, break out of the sandbox
@@ -251,6 +251,9 @@
     .__gmgv-vid-container.__gmgv-chat-enabled {
       right: 325px !important;
     }
+    .__gmgv-vid-container.__gmgv-bottombar-enabled {
+      bottom: 90px !important;
+    }
     .__gmgv-vid-container.__gmgv-screen-capture-mode {
       right: 325px !important;
       bottom: 90px !important;
@@ -358,6 +361,28 @@
     let screenCaptureModeI = null
 
     // This continually probes the number of participants & screen size to ensure videos are max possible size regardless of window layout
+    const calculateVideoSize = n => {
+      let col
+      let rows = []
+      const w = (innerWidth - 4) / 14
+      const h = (innerHeight - 52) / 9
+      const hasPin = pinnedIndex >= 0 && pinnedIndex < n
+      let size = 0
+      for (col = 1; col < 30; col++) {
+        rows[col] = !hasPin ? Math.ceil(n / col) : Math.ceil((Math.ceil(col / 2) ** 2 + n - 1) / col)
+        if (hasPin && rows[col] > col) continue // If hasPin ensure rows <= cols to ensure pin is at least 1/4th the screen
+        let s = Math.min(w / col, h / rows[col])
+        if (s <= size) {
+          col--
+          break
+        }
+        size = s
+      }
+      return {
+        col,
+        height: (innerHeight - 52) / rows[col],
+      }
+    }
     const gridUpdateLoop = () => {
       let col
       if (screenCaptureMode) {
@@ -366,22 +391,8 @@
         container.style.marginLeft = `${innerWidth - 325 - mul * col * 16}px`
         container.style.marginTop = `${innerHeight - 140 - mul * col * 9}px`
       } else {
-        const w = innerWidth / 14
-        const h = (innerHeight - 50) / 9
-        let n = container.children.length
-        if (pinnedIndex >= 0 && pinnedIndex < n) {
-          // Simulate having an extra quarter of videos so we can dedicate a quarter to the pinned video
-          n = Math.ceil((4 / 3) * (n - 1))
-        }
-        let size = 0
-        for (col = 1; col < 9; col++) {
-          let s = Math.min(w / col, h / Math.ceil(n / col))
-          if (s <= size) {
-            col--
-            break
-          }
-          size = s
-        }
+        const size = calculateVideoSize(container.children.length)
+        col = size.col
         container.style.marginLeft = ''
         container.style.marginTop = ''
       }
@@ -707,6 +718,9 @@
               if (el.parentElement === container.parentElement.parentElement && el.clientWidth === 320) {
                 container.classList.toggle('__gmgv-chat-enabled', v)
               }
+              if (el.parentElement === container.parentElement.parentElement && el.clientHeight === 88) {
+                container.classList.toggle('__gmgv-bottombar-enabled', v)
+              }
             }
           }
           return target.apply(thisArg, argumentsList)
@@ -729,11 +743,9 @@
 
       // Convert participant data to a VideoElem and add to the list
       // but only if it hasn't already been added. Also run a callback if provided.
-      const addUniqueVideoElem = (a, b, c) => {
+      const addUniqueVideoElem = (a, b) => {
         if (b && !a.some(e => e[magicKey] === b)) {
-          const d = new VideoElem(b, { attribution: !screenCaptureMode })
-          if (c) c(d)
-          a.push(d)
+          a.push(new VideoElem(b, { attribution: !screenCaptureMode }))
         }
       }
 
@@ -798,10 +810,10 @@
       // Use the map & map keys we found earlier to add every participant
       let ret = []
       for (const v of videoKeys) {
-        addUniqueVideoElem(ret, videoMap.get(v), magicSet(screenCaptureMode ? 0 : 2))
+        addUniqueVideoElem(ret, videoMap.get(v))
       }
       if (includeOwnVideo) {
-        addUniqueVideoElem(ret, ownVideo, magicSet(screenCaptureMode ? 0 : 2))
+        addUniqueVideoElem(ret, ownVideo)
       }
 
       // If in only-video mode, remove any without video
@@ -834,6 +846,12 @@
       if (pinnedIndex < 0) {
         pinnedIndex = ret.findIndex(v => !!v[magicKey].parent)
       }
+
+      // Set video quality based on estimated video height
+      // 0=highest 1=low 2=high
+      const size = calculateVideoSize(ret.length)
+      const setVideoQuality = magicSet(screenCaptureMode ? 0 : size.height >= 200 ? 2 : 1)
+      ret.forEach(setVideoQuality)
 
       // Allocate slots for screen capture mode
       if (screenCaptureMode) {
