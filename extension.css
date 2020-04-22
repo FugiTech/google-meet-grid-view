@@ -1,3 +1,6 @@
+* {
+  box-sizing: border-box;
+}
 html,
 body {
   margin: 0;
@@ -34,13 +37,25 @@ body.in-meeting #show-only-video,
 body.in-meeting #highlight-speaker,
 body.in-meeting #include-own-video,
 body.in-meeting #auto-enable,
-body.in-meeting #screen-capture-mode {
+body.in-meeting #screen-capture-mode,
+body.in-meeting #screen-capture-mode-desc {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+}
+#screen-capture-mode {
+  padding-bottom: 0;
+}
+#screen-capture-mode-desc {
+  padding-top: 3px;
+  padding-left: 45px;
 }
 body #source-code {
   display: block;
+}
+#source-code small {
+  border-right: 0.5px solid #cccccc;
+  padding-right: 5px;
+  margin-right: 2px;
 }
 label {
   color: #999999;
@@ -51,7 +66,4 @@ label:not(.disabled) {
 }
 input {
   margin-right: 8px;
-}
-small {
-  margin-top: 3px;
 }

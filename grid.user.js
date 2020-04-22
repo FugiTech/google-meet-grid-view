@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.24
+// @version      1.25
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
 // @grant        none
 // @run-at       document-idle
+// @inject-into  content
 // ==/UserScript==
 
 ;(function () {
@@ -32,6 +33,7 @@
     })()`
 
     const s = document.createElement('script')
+    s.setAttribute('data-version', GM.info.script.version)
     s.src = URL.createObjectURL(new Blob([scriptData], { type: 'text/javascript' }))
     document.body.appendChild(s)
   } else {
@@ -297,7 +299,12 @@
       z-index: 1;
     }
     .__gmgv-button {
+      display: flex;
       overflow: visible !important;
+    }
+    .__gmgv-button > svg {
+      height: 24px;
+      width: 24px;
     }
     .__gmgv-button > div {
       box-sizing: border-box;
@@ -317,16 +324,16 @@
       display: block;
     }
     .__gmgv-button > div label {
-      display: block;
-      line-height: 24px;
+      display: flex;
+      align-items: center;
       color: #999999;
+      margin: 4px 0;
     }
     .__gmgv-button > div label:not(.disabled) {
       cursor: pointer;
       color: #000000;
     }
-    .__gmgv-button > div label small {
-      display: block;
+    .__gmgv-button > div small {
       line-height: 12px;
       font-weight: 400;
     }
@@ -335,7 +342,15 @@
       height: 1px;
       background: #f1f3f4;
     }
-    .__gmgv-button > div a {
+    .__gmgv-button .__gmgv-source-code small {
+      border-right: 0.5px solid #f1f3f4;
+      padding-right: 5px;
+      margin-right: 2px;
+    }
+    .__gmgv-button .__gmgv-source-code a {
+      font-size: 12px;
+    }
+    .__gmgv-button > div > a {
       display: inline-block;
       line-height: 20px;
     }
@@ -348,17 +363,14 @@
     let pinnedIndex = -1
     let screenCaptureModeAllocations = new Map() // participantID -> order index
     let screenCaptureModeLookup = new Map() // `${name}|${presentation}|${dedupeID}` -> {id,active,order}
-    let showOnlyVideo = localStorage.getItem('gmgv-show-only-video') === 'true'
-    let highlightSpeaker = localStorage.getItem('gmgv-highlight-speaker') === 'true'
-    let includeOwnVideo = localStorage.getItem('gmgv-include-own-video') === 'true'
-    let autoEnable = localStorage.getItem('gmgv-auto-enable') === 'true'
-    let screenCaptureMode = localStorage.getItem('gmgv-screen-capture-mode') === 'true'
-    let toggleButtonSVG = null
-    let showOnlyVideoI = null
-    let highlightSpeakerI = null
-    let includeOwnVideoI = null
-    let autoEnableI = null
-    let screenCaptureModeI = null
+    let toggleButton = null
+    let settings = {
+      'show-only-video': localStorage.getItem('gmgv-show-only-video') === 'true',
+      'highlight-speaker': localStorage.getItem('gmgv-highlight-speaker') === 'true',
+      'include-own-video': localStorage.getItem('gmgv-include-own-video') === 'true',
+      'auto-enable': localStorage.getItem('gmgv-auto-enable') === 'true',
+      'screen-capture-mode': localStorage.getItem('gmgv-screen-capture-mode') === 'true',
+    }
 
     // This continually probes the number of participants & screen size to ensure videos are max possible size regardless of window layout
     const calculateVideoSize = n => {
@@ -385,7 +397,7 @@
     }
     const gridUpdateLoop = () => {
       let col
-      if (screenCaptureMode) {
+      if (settings['screen-capture-mode']) {
         col = Math.ceil(Math.sqrt(screenCaptureModeLookup.size))
         const mul = Math.floor(Math.min((innerWidth - 327) / (col * 16), (innerHeight - 140) / (col * 9)))
         container.style.marginLeft = `${innerWidth - 325 - mul * col * 16}px`
@@ -396,11 +408,11 @@
         container.style.marginLeft = ''
         container.style.marginTop = ''
       }
-      container.classList.toggle('__gmgv-screen-capture-mode', screenCaptureMode)
+      container.classList.toggle('__gmgv-screen-capture-mode', settings['screen-capture-mode'])
       container.style.gridTemplateColumns = `repeat(${col}, 1fr)`
-      container.style.gridTemplateRows = screenCaptureMode ? `repeat(${col}, 1fr)` : ''
+      container.style.gridTemplateRows = settings['screen-capture-mode'] ? `repeat(${col}, 1fr)` : ''
       for (let v of container.children) {
-        if (screenCaptureMode) {
+        if (settings['screen-capture-mode']) {
           const unknown = !screenCaptureModeAllocations.has(v.dataset.requestedParticipantId)
           v.classList.toggle('__gmgv-screen-capture-mode-unknown-participant', unknown)
           v.style.order = ''
@@ -424,7 +436,7 @@
       clearInterval(runInterval)
       runInterval = null
       container.classList.remove('__gmgv-vid-container')
-      toggleButtonSVG.innerHTML = gridOff
+      toggleButton.querySelector('svg').innerHTML = gridOff
       container.style.marginLeft = ''
       container.style.marginTop = ''
     }
@@ -432,7 +444,7 @@
       if (runInterval) clearInterval(runInterval)
       runInterval = setInterval(gridUpdateLoop, 250)
       container.classList.add('__gmgv-vid-container')
-      toggleButtonSVG.innerHTML = gridOn
+      toggleButton.querySelector('svg').innerHTML = gridOn
     }
     const toggleGrid = () => {
       runInterval ? disableGrid() : enableGrid()
@@ -445,7 +457,10 @@
       (document.currentScript && document.currentScript.src === 'chrome-extension://kklailfgofogmmdlhgmjgenehkjoioip/grid.user.js') || // Chrome
       (document.currentScript && document.currentScript.src === 'chrome-extension://ogbbehbkcmdciebilbkpjgopohnpfolj/grid.user.js') || // Microsoft
       (document.currentScript && document.currentScript.src.startsWith('moz-extension://')) || // Firefox regenerates the URL for each browser, so we can't detect if it's valid :(
-      (typeof GM !== 'undefined' && GM && GM.info && GM.info.script && GM.info.script.namespace === 'https://fugi.tech/') // user script
+      (typeof GM !== 'undefined' && GM && GM.info && GM.info.script && GM.info.script.namespace === 'https://fugi.tech/') || // user script
+      (document.currentScript && document.currentScript.src.startsWith('blob:')) // recursive user script
+    const version =
+      (document.currentScript && document.currentScript.dataset.version) || (typeof GM !== 'undefined' && GM && GM.info && GM.info.script && GM.info.script.version) || '?.?.?'
     let firstRun = true
     setInterval(() => {
       // Find the UI elements we need to modify. If they don't exist we haven't entered the meeting yet and will try again later
@@ -467,99 +482,50 @@
         buttons.prepend(buttons.children[1].cloneNode())
 
         // Add our button to to enable/disable the grid
-        const toggleButton = document.createElement('div')
+        toggleButton = document.createElement('div')
         toggleButton.classList = buttons.children[1].classList
         toggleButton.classList.add('__gmgv-button')
-        toggleButton.style.display = 'flex'
         toggleButton.onclick = toggleGrid
         buttons.prepend(toggleButton)
 
-        toggleButtonSVG = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-        toggleButtonSVG.style.width = '24px'
-        toggleButtonSVG.style.height = '24px'
-        toggleButtonSVG.setAttribute('viewBox', '0 0 24 24')
-        toggleButtonSVG.innerHTML = gridOff
-        toggleButton.appendChild(toggleButtonSVG)
+        toggleButton.innerHTML = `
+          <svg viewBox="0 0 24 24">${gridOff}</svg>
+          <div>
+            <label><input data-gmgv-setting="show-only-video" type="checkbox" /> ${T('showOnlyVideo')}</label>
+            <label><input data-gmgv-setting="highlight-speaker" type="checkbox" /> ${T('highlightSpeaker')}</label>
+            <label><input data-gmgv-setting="include-own-video" type="checkbox" /> ${T('includeOwnVideo')}</label>
+            <label><input data-gmgv-setting="auto-enable" type="checkbox" /> ${T('autoEnable')}</label>
+            <hr>
+            <label><input data-gmgv-setting="screen-capture-mode" type="checkbox" /> ${T('screenCaptureMode')}</label>
+            <small>${T('screenCaptureModeDescription')}</small>
+            <hr>
+            <div class="__gmgv-source-code">
+              <small>v${version}</small>
+              <a href="https://github.com/Fugiman/google-meet-grid-view" target="_blank">${T('sourceCode')}</a>
+            </div>
+            ${
+              authorized
+                ? ''
+                : `
+            <hr>
+            <a href="https://github.com/Fugiman/google-meet-grid-view#official-releases" target="_blank">${T('unauthorizedWarning')}</a>
+            `
+            }
+          </div>
+        `
 
-        // Add checkboxes for all our additional options
-        const additionalOptions = document.createElement('div')
-        additionalOptions.onclick = e => e.stopPropagation()
-        toggleButton.appendChild(additionalOptions)
+        toggleButton.querySelector('div').onclick = e => e.stopPropagation()
+        toggleButton.querySelectorAll('input').forEach(el => {
+          const settingName = el.dataset.gmgvSetting
+          el.checked = !!settings[settingName]
+          el.onchange = e => {
+            settings[settingName] = e.target.checked
+            localStorage.setItem('gmgv-' + settingName, e.target.checked)
+            if (settingName === 'screen-capture-mode') updateScreenCaptureMode(e.target.checked)
+          }
+        })
 
-        const showOnlyVideoL = document.createElement('label')
-        showOnlyVideoI = document.createElement('input')
-        showOnlyVideoI.type = 'checkbox'
-        showOnlyVideoI.checked = showOnlyVideo
-        showOnlyVideoI.onchange = e => {
-          showOnlyVideo = e.target.checked
-          localStorage.setItem('gmgv-show-only-video', showOnlyVideo)
-        }
-        showOnlyVideoL.innerText = T('showOnlyVideo')
-        showOnlyVideoL.prepend(showOnlyVideoI)
-        additionalOptions.appendChild(showOnlyVideoL)
-
-        const highlightSpeakerL = document.createElement('label')
-        highlightSpeakerI = document.createElement('input')
-        highlightSpeakerI.type = 'checkbox'
-        highlightSpeakerI.checked = highlightSpeaker
-        highlightSpeakerI.onchange = e => {
-          highlightSpeaker = e.target.checked
-          localStorage.setItem('gmgv-highlight-speaker', highlightSpeaker)
-        }
-        highlightSpeakerL.innerText = T('highlightSpeaker')
-        highlightSpeakerL.prepend(highlightSpeakerI)
-        additionalOptions.appendChild(highlightSpeakerL)
-
-        const includeOwnVideoL = document.createElement('label')
-        includeOwnVideoI = document.createElement('input')
-        includeOwnVideoI.type = 'checkbox'
-        includeOwnVideoI.checked = includeOwnVideo
-        includeOwnVideoI.onchange = e => {
-          includeOwnVideo = e.target.checked
-          localStorage.setItem('gmgv-include-own-video', includeOwnVideo)
-        }
-        includeOwnVideoL.innerText = T('includeOwnVideo')
-        includeOwnVideoL.prepend(includeOwnVideoI)
-        additionalOptions.appendChild(includeOwnVideoL)
-
-        const autoEnableL = document.createElement('label')
-        autoEnableI = document.createElement('input')
-        autoEnableI.type = 'checkbox'
-        autoEnableI.checked = autoEnable
-        autoEnableI.onchange = e => {
-          autoEnable = e.target.checked
-          localStorage.setItem('gmgv-auto-enable', autoEnable)
-        }
-        autoEnableL.innerText = T('autoEnable')
-        autoEnableL.prepend(autoEnableI)
-        additionalOptions.appendChild(autoEnableL)
-
-        additionalOptions.appendChild(document.createElement('hr'))
-
-        const screenCaptureModeL = document.createElement('label')
-        screenCaptureModeI = document.createElement('input')
-        screenCaptureModeI.type = 'checkbox'
-        screenCaptureModeI.checked = screenCaptureMode
-        screenCaptureModeI.onchange = e => {
-          updateScreenCaptureMode(e.target.checked)
-        }
-        screenCaptureModeL.innerText = T('screenCaptureMode')
-        screenCaptureModeL.prepend(screenCaptureModeI)
-        const screenCaptureModeS = document.createElement('small')
-        screenCaptureModeS.innerText = T('screenCaptureModeDescription')
-        screenCaptureModeL.append(screenCaptureModeS)
-        additionalOptions.appendChild(screenCaptureModeL)
-
-        const unauthorizedWarningA = document.createElement('a')
-        unauthorizedWarningA.target = '_blank'
-        unauthorizedWarningA.href = 'https://github.com/Fugiman/google-meet-grid-view'
-        unauthorizedWarningA.innerText = T('unauthorizedWarning')
-        if (!authorized) {
-          additionalOptions.appendChild(document.createElement('hr'))
-          additionalOptions.appendChild(unauthorizedWarningA)
-        }
-
-        updateScreenCaptureMode(screenCaptureMode)
+        updateScreenCaptureMode(settings['screen-capture-mode'])
       }
 
       // Find the functions inside google meets code that we need to override for our functionality
@@ -617,7 +583,7 @@
       // Auto-enable
       if (firstRun && container && buttons) {
         firstRun = false
-        if (autoEnable) enableGrid()
+        if (settings['auto-enable']) enableGrid()
       }
     }, 250)
 
@@ -692,7 +658,7 @@
               }
             }
             if (thisArg.__grid_videoElem.dataset.allocationIndex) {
-              if (thisArg[objKey].getVolume() > 0 && runInterval && highlightSpeaker) {
+              if (thisArg[objKey].getVolume() > 0 && runInterval && settings['highlight-speaker']) {
                 thisArg.__grid_videoElem.classList.add('__gmgv-speaking')
               } else {
                 thisArg.__grid_videoElem.classList.remove('__gmgv-speaking')
@@ -745,7 +711,7 @@
       // but only if it hasn't already been added. Also run a callback if provided.
       const addUniqueVideoElem = (a, b) => {
         if (b && !a.some(e => e[magicKey] === b)) {
-          a.push(new VideoElem(b, { attribution: !screenCaptureMode }))
+          a.push(new VideoElem(b, { attribution: !settings['screen-capture-mode'] }))
         }
       }
 
@@ -812,12 +778,12 @@
       for (const v of videoKeys) {
         addUniqueVideoElem(ret, videoMap.get(v))
       }
-      if (includeOwnVideo) {
+      if (settings['include-own-video']) {
         addUniqueVideoElem(ret, ownVideo)
       }
 
       // If in only-video mode, remove any without video
-      if (showOnlyVideo && !screenCaptureMode) {
+      if (settings['show-only-video'] && !settings['screen-capture-mode']) {
         // ret[idx][magicKey].wr.Aa.Aa.Ca.Ea.Ws.Ea.state // mu (no) li (yes)
         const tests = [/\.call\(this\)/, /\.call\(this,.*,"a"\)/, /new Set;this\.\w+=new _/, /new Map.*new Set/, /"un".*"li"/, /new Map/, /Object/]
         ret = ret.filter(e => {
@@ -850,11 +816,11 @@
       // Set video quality based on estimated video height
       // 0=highest 1=low 2=high
       const size = calculateVideoSize(ret.length)
-      const setVideoQuality = magicSet(screenCaptureMode ? 0 : size.height >= 200 ? 2 : 1)
+      const setVideoQuality = magicSet(settings['screen-capture-mode'] ? 0 : size.height >= 200 ? 2 : 1)
       ret.forEach(setVideoQuality)
 
       // Allocate slots for screen capture mode
-      if (screenCaptureMode) {
+      if (settings['screen-capture-mode']) {
         const activeIDs = new Set(ret.map(v => v[magicKey].getId()))
 
         screenCaptureModeLookup.forEach(v => {
@@ -892,16 +858,15 @@
     }
 
     function updateScreenCaptureMode(enabled) {
-      screenCaptureMode = screenCaptureModeI.checked = enabled
-      localStorage.setItem('gmgv-screen-capture-mode', screenCaptureMode)
+      const showOnlyVideo = toggleButton.querySelector('input[data-gmgv-setting="show-only-video"]')
+      showOnlyVideo.checked = !enabled && settings['show-only-video']
+      showOnlyVideo.disabled = enabled
+      showOnlyVideo.parentElement.classList.toggle('disabled', enabled)
 
-      showOnlyVideoI.checked = !enabled && showOnlyVideo
-      showOnlyVideoI.disabled = enabled
-      showOnlyVideoI.parentElement.classList.toggle('disabled', enabled)
-
-      highlightSpeakerI.checked = !enabled && highlightSpeaker
-      highlightSpeakerI.disabled = enabled
-      highlightSpeakerI.parentElement.classList.toggle('disabled', enabled)
+      const highlightSpeaker = toggleButton.querySelector('input[data-gmgv-setting="highlight-speaker"]')
+      highlightSpeaker.checked = !enabled && settings['highlight-speaker']
+      highlightSpeaker.disabled = enabled
+      highlightSpeaker.parentElement.classList.toggle('disabled', enabled)
 
       // Reset the mappings to reduce clutter on toggle
       if (!enabled) {
@@ -922,11 +887,7 @@
               sender: 'gmgv_user',
               inMeeting: !!container,
               enabled: !!runInterval,
-              showOnlyVideo,
-              highlightSpeaker,
-              includeOwnVideo,
-              autoEnable,
-              screenCaptureMode,
+              settings,
             })
             break
           case 'setEnabled':
@@ -937,44 +898,11 @@
               success: true,
             })
             break
-          case 'setShowOnlyVideo':
-            showOnlyVideo = showOnlyVideoI.checked = event.data.value
-            localStorage.setItem('gmgv-show-only-video', showOnlyVideo)
-            window.postMessage({
-              id: event.data.id,
-              sender: 'gmgv_user',
-              success: true,
-            })
-            break
-          case 'setHighlightSpeaker':
-            highlightSpeaker = highlightSpeakerI.checked = event.data.value
-            localStorage.setItem('gmgv-highlight-speaker', highlightSpeaker)
-            window.postMessage({
-              id: event.data.id,
-              sender: 'gmgv_user',
-              success: true,
-            })
-            break
-          case 'setIncludeOwnVideo':
-            includeOwnVideo = includeOwnVideoI.checked = event.data.value
-            localStorage.setItem('gmgv-include-own-video', includeOwnVideo)
-            window.postMessage({
-              id: event.data.id,
-              sender: 'gmgv_user',
-              success: true,
-            })
-            break
-          case 'setAutoEnable':
-            autoEnable = autoEnableI.checked = event.data.value
-            localStorage.setItem('gmgv-auto-enable', autoEnable)
-            window.postMessage({
-              id: event.data.id,
-              sender: 'gmgv_user',
-              success: true,
-            })
-            break
-          case 'setScreenCaptureMode':
-            updateScreenCaptureMode(event.data.value)
+          case 'updateSetting':
+            toggleButton.querySelector(`input[data-gmgv-setting="${event.data.name}"]`).checked = event.data.value
+            settings[event.data.name] = event.data.value
+            localStorage.setItem('gmgv-' + event.data.name, event.data.value)
+            if (event.data.name === 'screen-capture-mode') updateScreenCaptureMode(event.data.value)
             window.postMessage({
               id: event.data.id,
               sender: 'gmgv_user',
