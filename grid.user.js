@@ -152,7 +152,7 @@
         showOnlyVideo: 'Toon alleen deelnemers met video',
         highlightSpeaker: 'Highlight sprekers',
         includeOwnVideo: 'Toon jezelf in het raster',
-        autoEnable: 'Raster standaard automatisch inschakelen',
+        autoEnable: 'Raster automatisch inschakelen',
         notRunning: 'Het raster staat niet aan op deze pagina',
         noMeeting: 'Het raster is pas zichtbaar als er aan een meeting wordt deelgenomen',
         enabled: 'Zet het raster aan',
