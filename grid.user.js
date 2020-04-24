@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.25
+// @version      1.26
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -152,7 +152,7 @@
         showOnlyVideo: 'Toon alleen deelnemers met video',
         highlightSpeaker: 'Highlight sprekers',
         includeOwnVideo: 'Toon jezelf in het raster',
-        autoEnable: 'Raster standaard automatisch inschakelen',
+        autoEnable: 'Raster automatisch inschakelen',
         notRunning: 'Het raster staat niet aan op deze pagina',
         noMeeting: 'Het raster is pas zichtbaar als er aan een meeting wordt deelgenomen',
         enabled: 'Zet het raster aan',
@@ -256,13 +256,17 @@
     .__gmgv-vid-container.__gmgv-bottombar-enabled {
       bottom: 90px !important;
     }
+    .__gmgv-vid-container.__gmgv-captions-enabled {
+      bottom: 202px !important;
+    }
     .__gmgv-vid-container.__gmgv-screen-capture-mode {
       right: 325px !important;
       bottom: 90px !important;
       z-index: 10;
       background: #111;
     }
-    .__gmgv-vid-container.__gmgv-screen-capture-mode .__gmgv-screen-capture-mode-unknown-participant {
+    .__gmgv-vid-container.__gmgv-screen-capture-mode .__gmgv-screen-capture-mode-unknown-participant,
+    .__gmgv-vid-container.__gmgv-screen-capture-mode [data-self-name] {
       display: none;
     }
     .__gmgv-vid-container > div {
@@ -328,10 +332,14 @@
       align-items: center;
       color: #999999;
       margin: 4px 0;
+      line-height: 18px;
     }
     .__gmgv-button > div label:not(.disabled) {
       cursor: pointer;
       color: #000000;
+    }
+    .__gmgv-button input {
+      margin-right: 8px;
     }
     .__gmgv-button > div small {
       line-height: 12px;
@@ -341,6 +349,9 @@
       border: 0;
       height: 1px;
       background: #f1f3f4;
+    }
+    .__gmgv-button .__gmgv-source-code {
+      line-height: 16px;
     }
     .__gmgv-button .__gmgv-source-code small {
       border-right: 0.5px solid #f1f3f4;
@@ -475,8 +486,7 @@
       const buttons = ownVideoPreview && ownVideoPreview.parentElement.parentElement.parentElement
       if (buttons && !buttons.__grid_ran) {
         buttons.__grid_ran = true
-        buttons.parentElement.parentElement.style.zIndex = 10 // Prevent options getting cut off by pin/mute overlay
-        buttons.parentElement.style.zIndex = 2 // Prevent options getting cut off by speaker
+        buttons.parentElement.parentElement.parentElement.style.zIndex = 10 // Prevent options getting cut off by pin/mute overlay or speaker overlay
 
         // Find the button container element and copy the divider
         buttons.prepend(buttons.children[1].cloneNode())
@@ -563,8 +573,16 @@
           if (v && typeof v === 'function' && !v.__grid_ran) {
             m = /function\(a,b,c\){return!0===c\?/.exec(v.toString())
             if (m) {
-              console.log('[google-meet-grid-view] Successfully hooked into chat toggle', v)
+              console.log('[google-meet-grid-view] Successfully hooked into chat/bottom-bar toggle', v)
               const p = new Proxy(v, ToggleProxyHandler())
+              p.__grid_ran = true
+              window.default_MeetingsUi[_k] = p
+            }
+
+            m = /function\(a,b\){a\.style\.display=b\?/.exec(v.toString())
+            if (m) {
+              console.log('[google-meet-grid-view] Successfully hooked into caption toggle', v)
+              const p = new Proxy(v, CaptionProxyHandler())
               p.__grid_ran = true
               window.default_MeetingsUi[_k] = p
             }
@@ -687,6 +705,21 @@
               if (el.parentElement === container.parentElement.parentElement && el.clientHeight === 88) {
                 container.classList.toggle('__gmgv-bottombar-enabled', v)
               }
+            }
+          }
+          return target.apply(thisArg, argumentsList)
+        },
+      }
+    }
+
+    function CaptionProxyHandler() {
+      return {
+        apply: function (target, thisArg, argumentsList) {
+          if (argumentsList.length === 2 && container) {
+            const el = argumentsList[0]
+            const v = argumentsList[1]
+            if (el.parentElement === container.parentElement.parentElement) {
+              container.classList.toggle('__gmgv-captions-enabled', v)
             }
           }
           return target.apply(thisArg, argumentsList)
