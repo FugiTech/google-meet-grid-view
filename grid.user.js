@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.26
+// @version      1.27
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -12,18 +12,9 @@
 
 ;(function () {
   // If included by our extension's icon page, export translation factory
-  if (
-    (document.currentScript && document.currentScript.src === window.location.href.replace('popup.html', 'grid.user.js')) ||
-    window.location.href === 'chrome-extension://kklailfgofogmmdlhgmjgenehkjoioip/popup.html' // Chrome v1.19
-  ) {
+  if (document.currentScript && document.currentScript.src === window.location.href.replace('popup.html', 'grid.user.js')) {
     // If imported, export the translation factory
     window.TranslationFactory = TranslationFactory
-  } else if (document.currentScript && document.currentScript.src === 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/grid.user.min.js') {
-    // We're running the cached CDN version, load the uncached version (rotates hourly)
-    const s = document.createElement('script')
-    s.src = 'https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/grid.user.js?t=' + Math.floor(new Date() / 3600000)
-    s.setAttribute('nonce', window._F_getIjData().csp_nonce)
-    document.body.appendChild(s)
   } else if (typeof unsafeWindow !== 'undefined') {
     // If running in a sandbox, break out of the sandbox
     const scriptData = `(function(){
@@ -238,6 +229,8 @@
       '<path fill="currentColor" d="M0,2.77L1.28,1.5L22.5,22.72L21.23,24L19.23,22H4C2.92,22 2,21.1 2,20V4.77L0,2.77M10,4V7.68L8,5.68V4H6.32L4.32,2H20A2,2 0 0,1 22,4V19.7L20,17.7V16H18.32L16.32,14H20V10H16V13.68L14,11.68V10H12.32L10.32,8H14V4H10M16,4V8H20V4H16M16,20H17.23L16,18.77V20M4,8H5.23L4,6.77V8M10,14H11.23L10,12.77V14M14,20V16.77L13.23,16H10V20H14M8,20V16H4V20H8M8,14V10.77L7.23,10H4V14H8Z" />'
     const gridOn =
       '<path fill="currentColor" d="M10,4V8H14V4H10M16,4V8H20V4H16M16,10V14H20V10H16M16,16V20H20V16H16M14,20V16H10V20H14M8,20V16H4V20H8M8,14V10H4V14H8M8,8V4H4V8H8M10,14H14V10H10V14M4,2H20A2,2 0 0,1 22,4V20A2,2 0 0,1 20,22H4C2.92,22 2,21.1 2,20V4A2,2 0 0,1 4,2Z" />'
+    const visibilityOff =
+      '<path fill="currentColor" d="M11.83,9L15,12.16C15,12.11 15,12.05 15,12A3,3 0 0,0 12,9C11.94,9 11.89,9 11.83,9M7.53,9.8L9.08,11.35C9.03,11.56 9,11.77 9,12A3,3 0 0,0 12,15C12.22,15 12.44,14.97 12.65,14.92L14.2,16.47C13.53,16.8 12.79,17 12,17A5,5 0 0,1 7,12C7,11.21 7.2,10.47 7.53,9.8M2,4.27L4.28,6.55L4.73,7C3.08,8.3 1.78,10 1,12C2.73,16.39 7,19.5 12,19.5C13.55,19.5 15.03,19.2 16.38,18.66L16.81,19.08L19.73,22L21,20.73L3.27,3M12,7A5,5 0 0,1 17,12C17,12.64 16.87,13.26 16.64,13.82L19.57,16.75C21.07,15.5 22.27,13.86 23,12C21.27,7.61 17,4.5 12,4.5C10.6,4.5 9.26,4.75 8,5.2L10.17,7.35C10.74,7.13 11.35,7 12,7Z" />'
 
     // Create the styles we need
     const s = document.createElement('style')
@@ -265,7 +258,6 @@
       z-index: 10;
       background: #111;
     }
-    .__gmgv-vid-container.__gmgv-screen-capture-mode .__gmgv-screen-capture-mode-unknown-participant,
     .__gmgv-vid-container.__gmgv-screen-capture-mode [data-self-name] {
       display: none;
     }
@@ -293,8 +285,7 @@
       opacity: 0;
       z-index: -1;
     }
-    .__gmgv-vid-container > div > div:first-child,
-    .__gmgv-vid-container > div > div:nth-child(2) {
+    .__gmgv-vid-container > div > div:first-child {
       z-index: -2;
     }
     .__gmgv-vid-container:not(.__gmgv-screen-capture-mode) > div.__gmgv-speaking:after {
@@ -306,9 +297,18 @@
       display: flex;
       overflow: visible !important;
     }
-    .__gmgv-button > svg {
+    .__gmgv-button > svg,
+    .__gmgv-hide svg {
       height: 24px;
       width: 24px;
+    }
+    .__gmgv-hide > div {
+      margin: 0 0 0 3px;
+      color: #e8eaed;
+      display: none;
+    }
+    .__gmgv-vid-container .__gmgv-hide > div {
+      display: block;
     }
     .__gmgv-button > div {
       box-sizing: border-box;
@@ -369,13 +369,16 @@
     document.body.append(s)
 
     // Variables
-    let runInterval = null
     let container = null
-    let pinnedIndex = -1
+    let forceReflow = () => {}
+    let lastStyles = []
     let screenCaptureModeAllocations = new Map() // participantID -> order index
     let screenCaptureModeLookup = new Map() // `${name}|${presentation}|${dedupeID}` -> {id,active,order}
+    let hiddenIDs = new Set()
+    let ownID = null
     let toggleButton = null
     let settings = {
+      enabled: false,
       'show-only-video': localStorage.getItem('gmgv-show-only-video') === 'true',
       'highlight-speaker': localStorage.getItem('gmgv-highlight-speaker') === 'true',
       'include-own-video': localStorage.getItem('gmgv-include-own-video') === 'true',
@@ -383,88 +386,9 @@
       'screen-capture-mode': localStorage.getItem('gmgv-screen-capture-mode') === 'true',
     }
 
-    // This continually probes the number of participants & screen size to ensure videos are max possible size regardless of window layout
-    const calculateVideoSize = n => {
-      let col
-      let rows = []
-      const w = (innerWidth - 4) / 14
-      const h = (innerHeight - 52) / 9
-      const hasPin = pinnedIndex >= 0 && pinnedIndex < n
-      let size = 0
-      for (col = 1; col < 30; col++) {
-        rows[col] = !hasPin ? Math.ceil(n / col) : Math.ceil((Math.ceil(col / 2) ** 2 + n - 1) / col)
-        if (hasPin && rows[col] > col) continue // If hasPin ensure rows <= cols to ensure pin is at least 1/4th the screen
-        let s = Math.min(w / col, h / rows[col])
-        if (s <= size) {
-          col--
-          break
-        }
-        size = s
-      }
-      return {
-        col,
-        height: (innerHeight - 52) / rows[col],
-      }
-    }
-    const gridUpdateLoop = () => {
-      let col
-      if (settings['screen-capture-mode']) {
-        col = Math.ceil(Math.sqrt(screenCaptureModeLookup.size))
-        const mul = Math.floor(Math.min((innerWidth - 327) / (col * 16), (innerHeight - 140) / (col * 9)))
-        container.style.marginLeft = `${innerWidth - 325 - mul * col * 16}px`
-        container.style.marginTop = `${innerHeight - 140 - mul * col * 9}px`
-      } else {
-        const size = calculateVideoSize(container.children.length)
-        col = size.col
-        container.style.marginLeft = ''
-        container.style.marginTop = ''
-      }
-      container.classList.toggle('__gmgv-screen-capture-mode', settings['screen-capture-mode'])
-      container.style.gridTemplateColumns = `repeat(${col}, 1fr)`
-      container.style.gridTemplateRows = settings['screen-capture-mode'] ? `repeat(${col}, 1fr)` : ''
-      for (let v of container.children) {
-        if (settings['screen-capture-mode']) {
-          const unknown = !screenCaptureModeAllocations.has(v.dataset.requestedParticipantId)
-          v.classList.toggle('__gmgv-screen-capture-mode-unknown-participant', unknown)
-          v.style.order = ''
-          if (!unknown) {
-            const idx = screenCaptureModeAllocations.get(v.dataset.requestedParticipantId)
-            v.style.gridArea = `${1 + Math.floor(idx / col)} / ${1 + (idx % col)}` // row / column
-          }
-        } else if (+v.dataset.allocationIndex === pinnedIndex) {
-          const span = Math.ceil(col / 2)
-          v.style.order = -1
-          v.style.gridArea = `span ${span} / span ${span}`
-        } else {
-          v.style.order = v.dataset.allocationIndex
-          v.style.gridArea = ''
-        }
-      }
-    }
-
-    // Define run functions
-    const disableGrid = () => {
-      clearInterval(runInterval)
-      runInterval = null
-      container.classList.remove('__gmgv-vid-container')
-      toggleButton.querySelector('svg').innerHTML = gridOff
-      container.style.marginLeft = ''
-      container.style.marginTop = ''
-    }
-    const enableGrid = () => {
-      if (runInterval) clearInterval(runInterval)
-      runInterval = setInterval(gridUpdateLoop, 250)
-      container.classList.add('__gmgv-vid-container')
-      toggleButton.querySelector('svg').innerHTML = gridOn
-    }
-    const toggleGrid = () => {
-      runInterval ? disableGrid() : enableGrid()
-    }
-
     // Make the button to perform the toggle
     // This runs on a loop since you can join/leave the meeting repeatedly without changing the page
     const authorized =
-      (document.currentScript && document.currentScript.src.startsWith('https://cdn.jsdelivr.net/gh/Fugiman/google-meet-grid-view/grid.user.')) || // v1.19
       (document.currentScript && document.currentScript.src === 'chrome-extension://kklailfgofogmmdlhgmjgenehkjoioip/grid.user.js') || // Chrome
       (document.currentScript && document.currentScript.src === 'chrome-extension://ogbbehbkcmdciebilbkpjgopohnpfolj/grid.user.js') || // Microsoft
       (document.currentScript && document.currentScript.src.startsWith('moz-extension://')) || // Firefox regenerates the URL for each browser, so we can't detect if it's valid :(
@@ -479,7 +403,7 @@
       const _container = participantVideo && participantVideo.parentElement
       if (_container && _container !== container) {
         container = _container
-        if (runInterval) enableGrid() // When someone starts a presentation `container` will change under us, so we need to restart the grid
+        updateSetting('enabled', settings['enabled']) // When someone starts a presentation `container` will change under us, so we need to restart the grid
       }
 
       const ownVideoPreview = document.querySelector('[data-fps-request-screencast-cap]')
@@ -495,7 +419,9 @@
         toggleButton = document.createElement('div')
         toggleButton.classList = buttons.children[1].classList
         toggleButton.classList.add('__gmgv-button')
-        toggleButton.onclick = toggleGrid
+        toggleButton.onclick = () => {
+          updateSetting('enabled', !settings['enabled'])
+        }
         buttons.prepend(toggleButton)
 
         toggleButton.innerHTML = `
@@ -528,14 +454,10 @@
         toggleButton.querySelectorAll('input').forEach(el => {
           const settingName = el.dataset.gmgvSetting
           el.checked = !!settings[settingName]
-          el.onchange = e => {
-            settings[settingName] = e.target.checked
-            localStorage.setItem('gmgv-' + settingName, e.target.checked)
-            if (settingName === 'screen-capture-mode') updateScreenCaptureMode(e.target.checked)
-          }
+          el.onchange = e => updateSetting(settingName, e.target.checked)
         })
 
-        updateScreenCaptureMode(settings['screen-capture-mode'])
+        updateSetting('screen-capture-mode', settings['screen-capture-mode'])
       }
 
       // Find the functions inside google meets code that we need to override for our functionality
@@ -564,6 +486,23 @@
                 if (m) {
                   console.log('[google-meet-grid-view] Successfully hooked into volume detection', v.prototype[k])
                   const p = new Proxy(v.prototype[k], VolumeDetectionProxyHandler(m[1]))
+                  p.__grid_ran = true
+                  v.prototype[k] = p
+                }
+
+                // reflow(unknown, force)
+                m = /function\(a,b\){if\(this\.([A-Za-z]+)!==a\|\|\(void 0===b\?0:b\)\)this\.([A-Za-z]+)=a,this\.([A-Za-z]+)\(_\.([A-Za-z]+)\)}/.exec(p.value.toString())
+                if (m) {
+                  console.log('[google-meet-grid-view] Successfully hooked into reflow trigger', v.prototype[k])
+                  const p = new Proxy(v.prototype[k], ReflowProxyHandler())
+                  p.__grid_ran = true
+                  v.prototype[k] = p
+                }
+
+                m = /function\(a\){return .*\.appendChild\(/.exec(p.value.toString())
+                if (m) {
+                  console.log('[google-meet-grid-view] Successfully hooked into append handler', v.prototype[k])
+                  const p = new Proxy(v.prototype[k], AppendProxyHandler())
                   p.__grid_ran = true
                   v.prototype[k] = p
                 }
@@ -601,9 +540,9 @@
       // Auto-enable
       if (firstRun && container && buttons) {
         firstRun = false
-        if (settings['auto-enable']) enableGrid()
+        if (settings['auto-enable']) updateSetting('enabled', true)
       }
-    }, 250)
+    }, 1000)
 
     // This overrides the function that handles laying out video.
     // All we do here is install another proxy on the Map that returns which layout to use
@@ -643,7 +582,7 @@
             ret = ret.bind(target)
           }
 
-          if (runInterval && name == 'get') {
+          if (settings['enabled'] && name == 'get') {
             return idx => ({
               [funcKey]: (videoOrdering, windowData) => {
                 try {
@@ -676,7 +615,7 @@
               }
             }
             if (thisArg.__grid_videoElem.dataset.allocationIndex) {
-              if (thisArg[objKey].getVolume() > 0 && runInterval && settings['highlight-speaker']) {
+              if (thisArg[objKey].getVolume() > 0 && settings['enabled'] && settings['highlight-speaker']) {
                 thisArg.__grid_videoElem.classList.add('__gmgv-speaking')
               } else {
                 thisArg.__grid_videoElem.classList.remove('__gmgv-speaking')
@@ -720,6 +659,35 @@
             const v = argumentsList[1]
             if (el.parentElement === container.parentElement.parentElement) {
               container.classList.toggle('__gmgv-captions-enabled', v)
+            }
+          }
+          return target.apply(thisArg, argumentsList)
+        },
+      }
+    }
+
+    function ReflowProxyHandler() {
+      return {
+        apply: function (target, thisArg, argumentsList) {
+          forceReflow = () => {
+            // reflow.call(this, unknown, force)
+            target.call(thisArg, true, true)
+          }
+          return target.apply(thisArg, argumentsList)
+        },
+      }
+    }
+
+    function AppendProxyHandler() {
+      return {
+        apply: function (target, thisArg, argumentsList) {
+          if (argumentsList.length === 1 && argumentsList[0] && argumentsList[0].dataset && argumentsList[0].dataset.allocationIndex) {
+            const v = argumentsList[0]
+            injectHideButton(v)
+            if (settings['enabled']) {
+              const i = +v.dataset.allocationIndex
+              lastStyles[i].el = v
+              applyStyles(lastStyles[i])
             }
           }
           return target.apply(thisArg, argumentsList)
@@ -805,6 +773,7 @@
           }
         }
       }
+      ownID = ownVideo.id
 
       // Use the map & map keys we found earlier to add every participant
       let ret = []
@@ -832,6 +801,60 @@
         })
       }
 
+      // Remove all those explicitly hidden
+      const activeIDs = new Set(ret.map(v => v[magicKey].getId()))
+      ret = ret.filter(e => !hiddenIDs.has(e[magicKey].id))
+
+      // Allocate slots for screen capture mode
+      const hiddenSize = Array.from(screenCaptureModeLookup.values()).filter(v => hiddenIDs.has(v.id)).length
+      if (settings['screen-capture-mode']) {
+        // Remove gaps caused by hidden elements
+        let fullOrdering = []
+        screenCaptureModeLookup.forEach(v => {
+          v.active = activeIDs.has(v.id)
+          v.hidden = hiddenIDs.has(v.id)
+          if (!v.hidden) fullOrdering[v.order] = v
+        })
+        let hiddenOffset = 0
+        for (let i = 0; i < fullOrdering.length; i++) {
+          if (fullOrdering[i]) {
+            fullOrdering[i].order -= hiddenOffset
+            screenCaptureModeAllocations.set(fullOrdering[i].id, fullOrdering[i].order)
+          } else {
+            hiddenOffset++
+          }
+        }
+
+        ret = ret.filter(v => {
+          const participant = v[magicKey]
+          const id = participant.getId()
+          const name = participant.getName()
+          const presenting = !!participant.parent
+
+          if (screenCaptureModeAllocations.has(id)) return true
+
+          for (let dedupeID = 0; dedupeID <= screenCaptureModeLookup.size; dedupeID++) {
+            const key = `${name}|${presenting}|${dedupeID}`
+            let l = screenCaptureModeLookup.get(key)
+            if (l && l.active && l.id !== id) continue
+            if (!l) l = { order: screenCaptureModeLookup.size - hiddenSize }
+            l.active = true
+            l.id = id
+            screenCaptureModeLookup.set(key, l)
+            if (l.hidden) {
+              hiddenIDs.add(id)
+              return false
+            }
+            screenCaptureModeAllocations.set(id, l.order)
+            return true
+          }
+        })
+
+        for (let id of screenCaptureModeAllocations.keys()) {
+          if (!activeIDs.has(id)) screenCaptureModeAllocations.delete(id)
+        }
+      }
+
       // If there are no participants, add ourselves
       if (!ret.length) {
         addUniqueVideoElem(ret, ownVideo)
@@ -841,71 +864,165 @@
       ret.sort((a, b) => a[magicKey].name.localeCompare(b[magicKey].name) || a[magicKey].id.localeCompare(b[magicKey].id))
 
       // Set Pinned Index for use in CSS loop. If there is no pin, use the presenter if available
-      pinnedIndex = ret.findIndex(v => v[magicKey].isPinned())
+      let pinnedIndex = ret.findIndex(v => v[magicKey].isPinned())
       if (pinnedIndex < 0) {
         pinnedIndex = ret.findIndex(v => !!v[magicKey].parent)
       }
 
       // Set video quality based on estimated video height
       // 0=highest 1=low 2=high
-      const size = calculateVideoSize(ret.length)
+      const size = calculateVideoSize(ret.length, pinnedIndex >= 0)
       const setVideoQuality = magicSet(settings['screen-capture-mode'] ? 0 : size.height >= 200 ? 2 : 1)
       ret.forEach(setVideoQuality)
 
-      // Allocate slots for screen capture mode
+      // Build CSS changes
+      let { cols, rows } = size
       if (settings['screen-capture-mode']) {
-        const activeIDs = new Set(ret.map(v => v[magicKey].getId()))
+        cols = rows = Math.ceil(Math.sqrt(screenCaptureModeLookup.size - hiddenSize))
+        const mul = Math.floor(Math.min((innerWidth - 327) / (cols * 16), (innerHeight - 140) / (cols * 9)))
+        container.style.marginLeft = `${innerWidth - 325 - mul * cols * 16}px`
+        container.style.marginTop = `${innerHeight - 140 - mul * cols * 9}px`
+      } else {
+        container.style.marginLeft = ''
+        container.style.marginTop = ''
+      }
+      container.classList.toggle('__gmgv-screen-capture-mode', settings['screen-capture-mode'])
+      container.style.gridTemplateColumns = `repeat(${cols}, 1fr)`
+      container.style.gridTemplateRows = settings['screen-capture-mode'] ? `repeat(${rows}, 1fr)` : ''
 
-        screenCaptureModeLookup.forEach(v => {
-          v.active = activeIDs.has(v.id)
-        })
-
-        ret.forEach(v => {
-          const participant = v[magicKey]
-          const id = participant.getId()
-          const name = participant.getName()
-          const presenting = !!participant.parent
-
-          if (screenCaptureModeAllocations.has(id)) return
-
-          for (let dedupeID = 0; dedupeID <= screenCaptureModeLookup.size; dedupeID++) {
-            const key = `${name}|${presenting}|${dedupeID}`
-            let l = screenCaptureModeLookup.get(key)
-            if (l && l.active && l.id !== id) continue
-            if (!l) l = { order: screenCaptureModeLookup.size }
-            l.active = true
-            l.id = id
-            screenCaptureModeLookup.set(key, l)
-            screenCaptureModeAllocations.set(id, l.order)
-            return
+      const divTests = [/this\.src=/, /Object/, /Array/, /this\.listener=/, /\.model.*\(this\)/, /HTMLDivElement/]
+      const children = ret.map(e => {
+        let values = [e[magicKey]]
+        for (let t of divTests) {
+          let newValues = []
+          for (let v of values) {
+            newValues = newValues.concat(Object.values(v).filter(vv => vv && vv.constructor && t.test(vv.constructor.toString())))
           }
-        })
+          values = newValues
+        }
+        return values.filter(v => v.parentElement === container)[0]
+      })
 
-        for (let id of screenCaptureModeAllocations.keys()) {
-          if (!activeIDs.has(id)) screenCaptureModeAllocations.delete(id)
+      lastStyles = []
+      for (let i = 0; i < ret.length; i++) {
+        const v = (lastStyles[i] = { el: children[i] })
+        if (settings['screen-capture-mode']) {
+          const idx = screenCaptureModeAllocations.get(ret[i][magicKey].getId())
+          v.order = ''
+          v.gridArea = `${1 + Math.floor(idx / cols)} / ${1 + (idx % cols)}` // row / column
+        } else if (i === pinnedIndex) {
+          const spanCols = Math.ceil(cols / 2)
+          const spanRows = Math.floor((cols * rows - (ret.length - 1)) / spanCols)
+          v.order = -1
+          v.gridArea = `span ${spanRows} / span ${spanCols}`
+        } else {
+          v.order = i
+          v.gridArea = ''
         }
       }
+
+      lastStyles.forEach(applyStyles)
 
       // Build a video list from the ordered output
       return new VideoList(ret)
     }
 
-    function updateScreenCaptureMode(enabled) {
-      const showOnlyVideo = toggleButton.querySelector('input[data-gmgv-setting="show-only-video"]')
-      showOnlyVideo.checked = !enabled && settings['show-only-video']
-      showOnlyVideo.disabled = enabled
-      showOnlyVideo.parentElement.classList.toggle('disabled', enabled)
+    function calculateVideoSize(n, hasPin) {
+      let cols
+      let rows = []
+      const w = (innerWidth - 4) / 14
+      const h = (innerHeight - 52) / 9
+      let size = 0
+      for (cols = 1; cols < 30; cols++) {
+        rows[cols] = !hasPin ? Math.ceil(n / cols) : Math.ceil((Math.ceil(cols / 2) ** 2 + n - 1) / cols)
+        // If hasPin, calculate the actual minimum area of the pin (1/4th screen) and see if it fits
+        const canFit = Math.ceil(rows[cols] / 2) * Math.ceil(cols / 2) + n - 1 <= rows[cols] * cols
+        if (hasPin && !canFit) continue
+        let s = Math.min(w / cols, h / rows[cols])
+        if (s <= size) {
+          cols--
+          break
+        }
+        size = s
+      }
+      return {
+        cols,
+        rows: rows[cols],
+        height: (innerHeight - 52) / rows[cols],
+      }
+    }
 
-      const highlightSpeaker = toggleButton.querySelector('input[data-gmgv-setting="highlight-speaker"]')
-      highlightSpeaker.checked = !enabled && settings['highlight-speaker']
-      highlightSpeaker.disabled = enabled
-      highlightSpeaker.parentElement.classList.toggle('disabled', enabled)
+    function applyStyles({ el, order, gridArea }) {
+      if (!el) return
+      el.style.order = order
+      el.style.gridArea = gridArea
+    }
 
-      // Reset the mappings to reduce clutter on toggle
-      if (!enabled) {
+    function injectHideButton(el) {
+      const buttons = el.children[el.children.length - 1].children[0]
+      const firstButton = buttons.children[0].children[0]
+      const b = document.createElement('div')
+      b.classList = '__gmgv-hide'
+      b.innerHTML = `
+        <div class="${firstButton.classList}">
+          <span class="${firstButton.children[1].classList}">
+            <svg viewBox="0 0 24 24">${visibilityOff}</svg>
+          </span>
+        </div>
+      `
+      b.onclick = e => {
+        e.preventDefault()
+        const id = el.dataset.requestedParticipantId
+        if (id === ownID) {
+          updateSetting('include-own-video', false)
+        } else {
+          hiddenIDs.add(id)
+          forceReflow()
+        }
+      }
+      buttons.appendChild(b)
+    }
+
+    function updateSetting(name, value) {
+      settings[name] = value
+      localStorage.setItem('gmgv-' + name, value)
+
+      // Update the menu CSS
+      if (toggleButton) {
+        toggleButton.querySelector('svg').innerHTML = settings['enabled'] ? gridOn : gridOff
+        if (name !== 'enabled') toggleButton.querySelector(`input[data-gmgv-setting="${name}"]`).checked = value
+
+        const showOnlyVideo = toggleButton.querySelector('input[data-gmgv-setting="show-only-video"]')
+        showOnlyVideo.checked = settings['show-only-video'] && !settings['screen-capture-mode']
+        showOnlyVideo.disabled = settings['screen-capture-mode']
+        showOnlyVideo.parentElement.classList.toggle('disabled', settings['screen-capture-mode'])
+
+        const highlightSpeaker = toggleButton.querySelector('input[data-gmgv-setting="highlight-speaker"]')
+        highlightSpeaker.checked = settings['highlight-speaker'] && !settings['screen-capture-mode']
+        highlightSpeaker.disabled = settings['screen-capture-mode']
+        highlightSpeaker.parentElement.classList.toggle('disabled', settings['screen-capture-mode'])
+      }
+
+      // Update container CSS
+      if (container) {
+        container.classList.toggle('__gmgv-vid-container', settings['enabled'])
+        if (!settings['enabled']) {
+          container.style.marginLeft = ''
+          container.style.marginTop = ''
+        }
+      }
+
+      // Reset the screen capture mappings to reduce clutter on toggle
+      if (!settings['screen-capture-mode']) {
         screenCaptureModeAllocations = new Map()
         screenCaptureModeLookup = new Map()
       }
+      if (!settings['enabled']) {
+        hiddenIDs = new Set()
+      }
+
+      // Force a reflow to pick up the new settings
+      forceReflow()
     }
 
     // Extension communication
@@ -919,23 +1036,11 @@
               id: event.data.id,
               sender: 'gmgv_user',
               inMeeting: !!container,
-              enabled: !!runInterval,
               settings,
             })
             break
-          case 'setEnabled':
-            event.data.value ? enableGrid() : disableGrid()
-            window.postMessage({
-              id: event.data.id,
-              sender: 'gmgv_user',
-              success: true,
-            })
-            break
           case 'updateSetting':
-            toggleButton.querySelector(`input[data-gmgv-setting="${event.data.name}"]`).checked = event.data.value
-            settings[event.data.name] = event.data.value
-            localStorage.setItem('gmgv-' + event.data.name, event.data.value)
-            if (event.data.name === 'screen-capture-mode') updateScreenCaptureMode(event.data.value)
+            updateSetting(event.data.name, event.data.value)
             window.postMessage({
               id: event.data.id,
               sender: 'gmgv_user',
