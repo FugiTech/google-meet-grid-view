@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.27
+// @version      1.28
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -86,6 +86,8 @@
         screenCaptureMode: 'Enable Screen Capture Mode',
         screenCaptureModeDescription: 'Forces 16:9, Disables names, Locks videos in place',
         unauthorizedWarning: 'WARNING: This is an unauthorized extension. Please install the official release by clicking here.',
+        hideParticipant: 'Hide Participant',
+        showParticipant: 'Show Participant',
       },
       es: {
         showOnlyVideo: 'Mostrar solo participantes con vídeo',
@@ -182,6 +184,19 @@
         screenCaptureModeDescription: 'Forçar aspecto 16:9, Desabilitar nomes, Travar posição dos vídeos',
         unauthorizedWarning: 'ATENÇÃO: Esta é uma extensão não autorizada. Por favor, instale a versão oficial clicando aqui.',
       },
+      ru: {
+        showOnlyVideo: 'Показывать участников только с видео',
+        highlightSpeaker: 'Подсвечивать участника со звуком',
+        includeOwnVideo: 'Включить себя в сетку',
+        autoEnable: 'Разрешить вид сетки по умолчанию',
+        notRunning: 'Сетка не работает на этой странице',
+        noMeeting: 'Сетка не будет работать пока вы не подключитесь к конференции',
+        enabled: 'Включить вид сетки',
+        sourceCode: 'Исходный код доступен на Github',
+        unauthorizedWarning: 'ВНИМАНИЕ: Это не авторизированное расширение. Пожалуйста, установите оффициальную версию тут.',
+        hideParticipant: 'Скрыть участника',
+        showParticipant: 'Показать участника',
+      },
       sv: {
         showOnlyVideo: 'Visa endast deltagare med video',
         highlightSpeaker: 'Markera/följ talare',
@@ -231,6 +246,8 @@
       '<path fill="currentColor" d="M10,4V8H14V4H10M16,4V8H20V4H16M16,10V14H20V10H16M16,16V20H20V16H16M14,20V16H10V20H14M8,20V16H4V20H8M8,14V10H4V14H8M8,8V4H4V8H8M10,14H14V10H10V14M4,2H20A2,2 0 0,1 22,4V20A2,2 0 0,1 20,22H4C2.92,22 2,21.1 2,20V4A2,2 0 0,1 4,2Z" />'
     const visibilityOff =
       '<path fill="currentColor" d="M11.83,9L15,12.16C15,12.11 15,12.05 15,12A3,3 0 0,0 12,9C11.94,9 11.89,9 11.83,9M7.53,9.8L9.08,11.35C9.03,11.56 9,11.77 9,12A3,3 0 0,0 12,15C12.22,15 12.44,14.97 12.65,14.92L14.2,16.47C13.53,16.8 12.79,17 12,17A5,5 0 0,1 7,12C7,11.21 7.2,10.47 7.53,9.8M2,4.27L4.28,6.55L4.73,7C3.08,8.3 1.78,10 1,12C2.73,16.39 7,19.5 12,19.5C13.55,19.5 15.03,19.2 16.38,18.66L16.81,19.08L19.73,22L21,20.73L3.27,3M12,7A5,5 0 0,1 17,12C17,12.64 16.87,13.26 16.64,13.82L19.57,16.75C21.07,15.5 22.27,13.86 23,12C21.27,7.61 17,4.5 12,4.5C10.6,4.5 9.26,4.75 8,5.2L10.17,7.35C10.74,7.13 11.35,7 12,7Z" />'
+    const visibilityOn =
+      '<path fill="currentColor" d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" />'
 
     // Create the styles we need
     const s = document.createElement('style')
@@ -293,22 +310,14 @@
       opacity: 1;
       z-index: 1;
     }
+
     .__gmgv-button {
       display: flex;
       overflow: visible !important;
     }
-    .__gmgv-button > svg,
-    .__gmgv-hide svg {
+    .__gmgv-button > svg {
       height: 24px;
       width: 24px;
-    }
-    .__gmgv-hide > div {
-      margin: 0 0 0 3px;
-      color: #e8eaed;
-      display: none;
-    }
-    .__gmgv-vid-container .__gmgv-hide > div {
-      display: block;
     }
     .__gmgv-button > div {
       box-sizing: border-box;
@@ -364,6 +373,47 @@
     .__gmgv-button > div > a {
       display: inline-block;
       line-height: 20px;
+    }
+
+    .__gmgv-hide svg,
+    .__gmgv-show-hide svg {
+      height: 24px;
+      width: 24px;
+    }
+    .__gmgv-hide > div {
+      margin: 0 0 0 3px;
+      color: #e8eaed;
+      display: none;
+    }
+    .__gmgv-vid-container .__gmgv-hide > div,
+    .__gmgv-show-hide > div {
+      display: flex;
+    }
+    .__gmgv-hide > div,
+    .__gmgv-show-hide > div {
+      position: relative;
+      overflow: visible;
+      justify-content: center;
+    }
+    .__gmgv-hide > div > div,
+    .__gmgv-show-hide > div > div {
+      position: absolute;
+      border-radius: 2px;
+      background-color: rgba(95,99,104,0.9);
+      color: #ffffff;
+      pointer-events: none;
+      font-size: 10px;
+      font-weight: 500;
+      padding: 5px 8px 6px;
+      white-space: nowrap;
+      transition: all 0.3s ease-in-out 0.3s;
+      top: 31px;
+      opacity: 0;
+    }
+    .__gmgv-hide:hover > div > div,
+    .__gmgv-show-hide:hover > div > div {
+      top: 46px;
+      opacity: 1;
     }
   `
     document.body.append(s)
@@ -681,6 +731,7 @@
     function AppendProxyHandler() {
       return {
         apply: function (target, thisArg, argumentsList) {
+          // Detect when a participant video is added
           if (argumentsList.length === 1 && argumentsList[0] && argumentsList[0].dataset && argumentsList[0].dataset.allocationIndex) {
             const v = argumentsList[0]
             injectHideButton(v)
@@ -689,6 +740,15 @@
               lastStyles[i].el = v
               applyStyles(lastStyles[i])
             }
+          }
+          // Detect when participant options are expanded
+          const participantOptions = Object.values(thisArg)
+            .map(Object.values)
+            .flat()
+            .filter(v => v && v instanceof HTMLElement && v.dataset.sortKey)
+          if (participantOptions.length === 1) {
+            const v = Object.values(argumentsList[0]).map(Object.values).flat()[0]
+            injectShowHideButton(v, participantOptions[0])
           }
           return target.apply(thisArg, argumentsList)
         },
@@ -928,28 +988,23 @@
     }
 
     function calculateVideoSize(n, hasPin) {
-      let cols
-      let rows = []
+      let sizes = []
       const w = (innerWidth - 4) / 14
       const h = (innerHeight - 52) / 9
-      let size = 0
-      for (cols = 1; cols < 30; cols++) {
-        rows[cols] = !hasPin ? Math.ceil(n / cols) : Math.ceil((Math.ceil(cols / 2) ** 2 + n - 1) / cols)
+      for (let cols = 1; cols <= 30; cols++) {
+        const rows = !hasPin ? Math.ceil(n / cols) : Math.ceil((Math.ceil(cols / 2) ** 2 + n - 1) / cols)
         // If hasPin, calculate the actual minimum area of the pin (1/4th screen) and see if it fits
-        const canFit = Math.ceil(rows[cols] / 2) * Math.ceil(cols / 2) + n - 1 <= rows[cols] * cols
+        const canFit = Math.ceil(rows / 2) * Math.ceil(cols / 2) + n - 1 <= rows * cols
         if (hasPin && !canFit) continue
-        let s = Math.min(w / cols, h / rows[cols])
-        if (s <= size) {
-          cols--
-          break
-        }
-        size = s
+        const size = Math.min(w / cols, h / rows)
+        sizes.push({
+          cols,
+          rows,
+          size,
+          height: (innerHeight - 52) / rows,
+        })
       }
-      return {
-        cols,
-        rows: rows[cols],
-        height: (innerHeight - 52) / rows[cols],
-      }
+      return sizes.reduce((a,b) => a.size >= b.size ? a : b, {})
     }
 
     function applyStyles({ el, order, gridArea }) {
@@ -966,8 +1021,9 @@
       b.innerHTML = `
         <div class="${firstButton.classList}">
           <span class="${firstButton.children[1].classList}">
-            <svg viewBox="0 0 24 24">${visibilityOff}</svg>
+            <svg viewBox="0 0 24 24">${visibilityOn}</svg>
           </span>
+          <div>${T('hideParticipant')}</div>
         </div>
       `
       b.onclick = e => {
@@ -981,6 +1037,41 @@
         }
       }
       buttons.appendChild(b)
+    }
+
+    function injectShowHideButton(el, parent) {
+      const id = parent.dataset.participantId
+      const hidden = hiddenIDs.has(id)
+      const refButton = el.lastChild.children[0]
+      parent.parentElement.parentElement.style.overflow = 'visible'
+      el.style.overflow = 'visible'
+      const b = document.createElement('div')
+      b.classList = '__gmgv-show-hide'
+      b.style.display = settings['enabled'] ? '' : 'none'
+      b.innerHTML = `
+      <div class="${refButton.classList}">
+        <span class="${refButton.children[1].classList}">
+          <svg viewBox="0 0 24 24">${hidden ? visibilityOff : visibilityOn}</svg>
+        </span>
+        <div>${hidden ? T('showParticipant') : T('hideParticipant')}</div>
+      </div>
+      `
+      b.onclick = e => {
+        e.preventDefault()
+        if (hiddenIDs.has(id)) {
+          hiddenIDs.delete(id)
+        } else {
+          hiddenIDs.add(id)
+        }
+        b._refresh()
+        forceReflow()
+      }
+      b._refresh = () => {
+        const hidden = hiddenIDs.has(id)
+        b.querySelector('.__gmgv-show-hide > div > div').innerHTML = hidden ? T('showParticipant') : T('hideParticipant')
+        b.querySelector('svg').innerHTML = hidden ? visibilityOff : visibilityOn
+      }
+      el.insertBefore(b, el.lastChild)
     }
 
     function updateSetting(name, value) {
@@ -1011,6 +1102,12 @@
           container.style.marginTop = ''
         }
       }
+
+      // Update participant menu CSS
+      document.querySelectorAll('.__gmgv-show-hide').forEach(el => {
+        el.style.display = settings['enabled'] ? '' : 'none'
+        el._refresh()
+      })
 
       // Reset the screen capture mappings to reduce clutter on toggle
       if (!settings['screen-capture-mode']) {
