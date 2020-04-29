@@ -73,6 +73,8 @@
         screenCaptureMode: 'Aktiviere Bildschirmaufnahme Modus',
         screenCaptureModeDescription: 'Erwingt 16:9, entfernt Namen, fixiert Video Position',
         unauthorizedWarning: 'WARNUNG: Dieses ist eine nicht autorisiert Erweiterung. Bitte installieren Sie die offizielle Version, klicken Sie dafür hier.',
+        hideParticipant: 'Teilnehmer verbergen',
+        showParticipant: 'Teilnehmer anzeigen',
       },
       en: {
         showOnlyVideo: 'Only show participants with video',
