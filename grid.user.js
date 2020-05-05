@@ -131,7 +131,9 @@
         sourceCode: 'Il codice sorgente è disponibile su Github',
         screenCaptureMode: 'Attiva la modalià registrazione della schermata',
         screenCaptureModeDescription: 'Forza 16:9, Disattiva i nomi, Blocca i video nella posizione',
-        unauthorizedWarning: 'ATTENZIONE: Questa estensione non è autorizzata. Installa la versione ufficiale cliccando qua.',
+        unauthorizedWarning: 'ATTENZIONE: Questa estensione non è autorizzata. Installa la versione ufficiale cliccando qui.',
+        hideParticipant: 'Nascondi partecipante',
+        showParticipant: 'Mostra partecipante',
       },
       ja: {
         showOnlyVideo: 'カメラをオンにしている参加者のみ',
