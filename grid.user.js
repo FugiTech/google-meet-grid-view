@@ -56,7 +56,7 @@
         notRunning: 'Grid View kører ikke på denne side',
         noMeeting: 'Grid View kører ikke indtil du deltager i et møde',
         enabled: 'Aktiver Grid View',
-        sourceCode: 'Kildekoden er tilgøngelig på Github',
+        sourceCode: 'Kildekoden er tilgængelig på GitHub',
         screenCaptureMode: 'Aktiver skærmoptager',
         screenCaptureModeDescription: 'Gennemtvinger 16:9, Deaktiverer navne, Låser video-positioner',
         unauthorizedWarning: 'Advarsel: Dette er ikke en autoriseret tilføjelse. Installer venligst den officielle, ved at klikke her.',
