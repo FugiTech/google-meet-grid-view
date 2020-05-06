@@ -114,6 +114,8 @@
         screenCaptureMode: "Activer le mode capture d'écran",
         screenCaptureModeDescription: "Force l'affichage 16:9, désactive les noms, vérrouille les positions des vidéos",
         unauthorizedWarning: "ATTENTION : Il s'agit d'une extension non autorisée. Installez la version officielle en cliquant ici.",
+        hideParticipant: 'Cacher le participant',
+        showParticipant: 'Afficher le participant',
       },
       hr: {
         showOnlyVideo: 'Prikaži samo sudionike sa kamerom',
