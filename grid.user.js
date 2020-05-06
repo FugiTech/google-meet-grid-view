@@ -50,7 +50,7 @@
       },
       da: {
         showOnlyVideo: 'Vis kun deltagere med video',
-        highlightSpeaker: 'Fokus på talene personer',
+        highlightSpeaker: 'Fokuser på talene personer',
         includeOwnVideo: 'Vis mig selv i Grid',
         autoEnable: 'Tænd for Grid automatisk',
         notRunning: 'Grid View kører ikke på denne side',
