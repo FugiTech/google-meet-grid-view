@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.28
+// @version      1.29
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -50,13 +50,13 @@
       },
       da: {
         showOnlyVideo: 'Vis kun deltagere med video',
-        highlightSpeaker: 'Fokus på talene personer',
+        highlightSpeaker: 'Fokuser på talene personer',
         includeOwnVideo: 'Vis mig selv i Grid',
         autoEnable: 'Tænd for Grid automatisk',
         notRunning: 'Grid View kører ikke på denne side',
         noMeeting: 'Grid View kører ikke indtil du deltager i et møde',
         enabled: 'Aktiver Grid View',
-        sourceCode: 'Kildekoden er tilgøngelig på Github',
+        sourceCode: 'Kildekoden er tilgængelig på GitHub',
         screenCaptureMode: 'Aktiver skærmoptager',
         screenCaptureModeDescription: 'Gennemtvinger 16:9, Deaktiverer navne, Låser video-positioner',
         unauthorizedWarning: 'Advarsel: Dette er ikke en autoriseret tilføjelse. Installer venligst den officielle, ved at klikke her.',
@@ -73,6 +73,8 @@
         screenCaptureMode: 'Aktiviere Bildschirmaufnahme Modus',
         screenCaptureModeDescription: 'Erwingt 16:9, entfernt Namen, fixiert Video Position',
         unauthorizedWarning: 'WARNUNG: Dieses ist eine nicht autorisiert Erweiterung. Bitte installieren Sie die offizielle Version, klicken Sie dafür hier.',
+        hideParticipant: 'Teilnehmer verbergen',
+        showParticipant: 'Teilnehmer anzeigen',
       },
       en: {
         showOnlyVideo: 'Only show participants with video',
@@ -114,11 +116,28 @@
         screenCaptureMode: "Activer le mode capture d'écran",
         screenCaptureModeDescription: "Force l'affichage 16:9, désactive les noms, vérrouille les positions des vidéos",
         unauthorizedWarning: "ATTENTION : Il s'agit d'une extension non autorisée. Installez la version officielle en cliquant ici.",
+        hideParticipant: 'Cacher le participant',
+        showParticipant: 'Afficher le participant',
       },
       hr: {
         showOnlyVideo: 'Prikaži samo sudionike sa kamerom',
         highlightSpeaker: 'Naglasi govornike',
         includeOwnVideo: 'Uključi sebe u mrežnom prikazu',
+      },
+      id: {
+        showOnlyVideo: 'Hanya tampilkan peserta dengan video',
+        highlightSpeaker: 'Utamakan pembicara',
+        includeOwnVideo: 'Masukkan dirimu di grid',
+        autoEnable: 'Aktifkan grid dari awal',
+        notRunning: 'Grid View tidak aktif pada laman ini',
+        noMeeting: 'Grid View tidak akan aktif sampai kamu bergabung ke Meet',
+        enabled: 'Aktifkan Grid View',
+        sourceCode: 'Source Code ada di Github',
+        screenCaptureMode: 'Aktifkan Screen Capture Mode',
+        screenCaptureModeDescription: 'Paksa 16:9, Nonaktifkan nama, kunci video pada tempatnya',
+        unauthorizedWarning: 'PERINGATAN: Ini adalah ekstensi yang tidak resmi. Silakan pasang rilis resmi dengan mengklik di sini.',
+        hideParticipant: 'Sembunyikan Peserta',
+        showParticipant: 'Tampilkan Peserta',
       },
       it: {
         showOnlyVideo: 'Mostra solo i partecipanti con la fotocamera attiva',
@@ -131,7 +150,9 @@
         sourceCode: 'Il codice sorgente è disponibile su Github',
         screenCaptureMode: 'Attiva la modalià registrazione della schermata',
         screenCaptureModeDescription: 'Forza 16:9, Disattiva i nomi, Blocca i video nella posizione',
-        unauthorizedWarning: 'ATTENZIONE: Questa estensione non è autorizzata. Installa la versione ufficiale cliccando qua.',
+        unauthorizedWarning: 'ATTENZIONE: Questa estensione non è autorizzata. Installa la versione ufficiale cliccando qui.',
+        hideParticipant: 'Nascondi partecipante',
+        showParticipant: 'Mostra partecipante',
       },
       ja: {
         showOnlyVideo: 'カメラをオンにしている参加者のみ',
@@ -1004,7 +1025,7 @@
           height: (innerHeight - 52) / rows,
         })
       }
-      return sizes.reduce((a,b) => a.size >= b.size ? a : b, {})
+      return sizes.reduce((a, b) => (a.size >= b.size ? a : b), {})
     }
 
     function applyStyles({ el, order, gridArea }) {
@@ -1014,13 +1035,13 @@
     }
 
     function injectHideButton(el) {
-      const buttons = el.children[el.children.length - 1].children[0]
-      const firstButton = buttons.children[0].children[0]
+      const buttons = el.lastChild.firstChild
+      const refButton = buttons.firstChild.firstChild
       const b = document.createElement('div')
       b.classList = '__gmgv-hide'
       b.innerHTML = `
-        <div class="${firstButton.classList}">
-          <span class="${firstButton.children[1].classList}">
+        <div class="${refButton.classList}">
+          <span class="${refButton.children[1].classList}">
             <svg viewBox="0 0 24 24">${visibilityOn}</svg>
           </span>
           <div>${T('hideParticipant')}</div>
@@ -1036,7 +1057,7 @@
           forceReflow()
         }
       }
-      buttons.appendChild(b)
+      buttons.insertBefore(b, buttons.lastChild)
     }
 
     function injectShowHideButton(el, parent) {
