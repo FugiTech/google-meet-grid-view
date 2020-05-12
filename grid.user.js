@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.29
+// @version      1.30
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -68,11 +68,11 @@
         autoEnable: 'Rasteransicht automatisch aktivieren',
         notRunning: 'Rasteransicht ist für diese Seite nicht aktiv',
         noMeeting: 'Rasteransicht ist solange nicht aktiv, bis Sie dem Meeting beitreten',
-        enabled: 'Rasteransicht anschalten',
+        enabled: 'Rasteransicht einschalten',
         sourceCode: 'Der Quellcode ist auf Github zugänglich',
-        screenCaptureMode: 'Aktiviere Bildschirmaufnahme Modus',
-        screenCaptureModeDescription: 'Erwingt 16:9, entfernt Namen, fixiert Video Position',
-        unauthorizedWarning: 'WARNUNG: Dieses ist eine nicht autorisiert Erweiterung. Bitte installieren Sie die offizielle Version, klicken Sie dafür hier.',
+        screenCaptureMode: 'Aktiviere Bildschirmaufnahmemodus',
+        screenCaptureModeDescription: 'Erzwingt 16:9, entfernt Namen, fixiert Videoposition',
+        unauthorizedWarning: 'WARNUNG: Dies ist keine autorisierte Erweiterung. Bitte installieren Sie die offizielle Version. Klicken Sie dafür hier.',
         hideParticipant: 'Teilnehmer verbergen',
         showParticipant: 'Teilnehmer anzeigen',
       },
