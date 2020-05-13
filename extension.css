@@ -38,7 +38,8 @@ body.in-meeting #highlight-speaker,
 body.in-meeting #include-own-video,
 body.in-meeting #auto-enable,
 body.in-meeting #screen-capture-mode,
-body.in-meeting #screen-capture-mode-desc {
+body.in-meeting #screen-capture-mode-desc,
+body.in-meeting #advanced-settings {
   display: flex;
   align-items: center;
 }

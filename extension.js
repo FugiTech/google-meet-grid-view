@@ -40,6 +40,12 @@
 
     <div class="spacer"></div>
 
+    <div id="advanced-settings">
+      <a href="#">${T('advancedSettingsLink')}</a>
+    </div>
+
+    <div class="spacer"></div>
+
     <div id="source-code">
       <small>v${browser.runtime.getManifest().version}</small>
       <a href="https://github.com/Fugiman/google-meet-grid-view" target="_blank">
@@ -60,7 +66,8 @@
 
   document.body.classList = 'in-meeting'
   for (let [k, v] of Object.entries(state.settings)) {
-    document.querySelector(`#${k} input`).checked = v
+    const i = document.querySelector(`#${k} input`)
+    if (i) i.checked = v
   }
 
   const updateSettings = () => {
@@ -93,4 +100,8 @@
       }
     }
   })
+  document.querySelector('#advanced-settings a').onclick = e => {
+    e.preventDefault()
+    browser.tabs.sendMessage(tabs[0].id, { type: 'updateSetting', name: 'show-settings-overlay', value: true })
+  }
 })()

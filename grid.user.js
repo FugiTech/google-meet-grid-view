@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.29
+// @version      1.30
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -68,11 +68,11 @@
         autoEnable: 'Rasteransicht automatisch aktivieren',
         notRunning: 'Rasteransicht ist für diese Seite nicht aktiv',
         noMeeting: 'Rasteransicht ist solange nicht aktiv, bis Sie dem Meeting beitreten',
-        enabled: 'Rasteransicht anschalten',
+        enabled: 'Rasteransicht einschalten',
         sourceCode: 'Der Quellcode ist auf Github zugänglich',
-        screenCaptureMode: 'Aktiviere Bildschirmaufnahme Modus',
-        screenCaptureModeDescription: 'Erwingt 16:9, entfernt Namen, fixiert Video Position',
-        unauthorizedWarning: 'WARNUNG: Dieses ist eine nicht autorisiert Erweiterung. Bitte installieren Sie die offizielle Version, klicken Sie dafür hier.',
+        screenCaptureMode: 'Aktiviere Bildschirmaufnahmemodus',
+        screenCaptureModeDescription: 'Erzwingt 16:9, entfernt Namen, fixiert Videoposition',
+        unauthorizedWarning: 'WARNUNG: Dies ist keine autorisierte Erweiterung. Bitte installieren Sie die offizielle Version. Klicken Sie dafür hier.',
         hideParticipant: 'Teilnehmer verbergen',
         showParticipant: 'Teilnehmer anzeigen',
       },
@@ -90,6 +90,22 @@
         unauthorizedWarning: 'WARNING: This is an unauthorized extension. Please install the official release by clicking here.',
         hideParticipant: 'Hide Participant',
         showParticipant: 'Show Participant',
+        advancedSettingsLink: 'View Advanced Settings',
+        advancedSettingsTitle: 'Google Meet Grid View Advanced Settings',
+        bottomToolbarBehavior: 'Bottom Toolbar Behavior',
+        btbNative: 'Obscure grid when toolbar is showing',
+        btbResize: 'Resize grid when toolbar is showing',
+        btbForce: 'Always show toolbar and resize grid',
+        rightToolbarBehavior: 'Chat & People Behavior',
+        rtbNative: 'Obscure grid when chat is showing',
+        rtbResize: 'Resize grid when chat is showing',
+        ownVideoBehavior: 'Own Video In Grid Behavior',
+        ovbNative: 'Keep video mirrored',
+        ovbFlip: 'Flip video to match what others see',
+        modifyNames: 'Modify Participant Names',
+        mnNative: 'No modification ("Alpha Bravo Charlie")',
+        mnFirstSpace: 'Move first word to end ("Bravo Charlie, Alpha")',
+        mnLastSpace: 'Move last word to start ("Charlie, Alpha Bravo")',
       },
       es: {
         showOnlyVideo: 'Mostrar solo participantes con vídeo',
@@ -269,6 +285,7 @@
       '<path fill="currentColor" d="M11.83,9L15,12.16C15,12.11 15,12.05 15,12A3,3 0 0,0 12,9C11.94,9 11.89,9 11.83,9M7.53,9.8L9.08,11.35C9.03,11.56 9,11.77 9,12A3,3 0 0,0 12,15C12.22,15 12.44,14.97 12.65,14.92L14.2,16.47C13.53,16.8 12.79,17 12,17A5,5 0 0,1 7,12C7,11.21 7.2,10.47 7.53,9.8M2,4.27L4.28,6.55L4.73,7C3.08,8.3 1.78,10 1,12C2.73,16.39 7,19.5 12,19.5C13.55,19.5 15.03,19.2 16.38,18.66L16.81,19.08L19.73,22L21,20.73L3.27,3M12,7A5,5 0 0,1 17,12C17,12.64 16.87,13.26 16.64,13.82L19.57,16.75C21.07,15.5 22.27,13.86 23,12C21.27,7.61 17,4.5 12,4.5C10.6,4.5 9.26,4.75 8,5.2L10.17,7.35C10.74,7.13 11.35,7 12,7Z" />'
     const visibilityOn =
       '<path fill="currentColor" d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" />'
+    const close = '<path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />'
 
     // Create the styles we need
     const s = document.createElement('style')
@@ -281,10 +298,11 @@
       left: 2px !important;
       bottom: 2px !important;
     }
-    .__gmgv-vid-container.__gmgv-chat-enabled {
+    .__gmgv-vid-container.__gmgv-rtb-resize.__gmgv-chat-enabled {
       right: 325px !important;
     }
-    .__gmgv-vid-container.__gmgv-bottombar-enabled {
+    .__gmgv-vid-container.__gmgv-btb-resize.__gmgv-bottombar-enabled:not(.__gmgv-captions-enabled),
+    .__gmgv-vid-container.__gmgv-btb-force:not(.__gmgv-captions-enabled) {
       bottom: 90px !important;
     }
     .__gmgv-vid-container.__gmgv-captions-enabled {
@@ -330,6 +348,9 @@
       transition: opacity 60ms linear;
       opacity: 1;
       z-index: 1;
+    }
+    .__gmgv-vid-container.__gmgv-flip-self video {
+      transform: scaleX(1) !important;
     }
 
     .__gmgv-button {
@@ -436,25 +457,114 @@
       top: 46px;
       opacity: 1;
     }
+
+    .__gmgv-settings {
+      display: none;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 6000;
+      background: rgba(0,0,0,0.6);
+      align-items: center;
+      justify-content: center;
+    }
+    .__gmgv-settings > div {
+      max-height: 70vh;
+      max-width: 80vw;
+      overflow: auto;
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+    }
+    .__gmgv-settings > div > div {
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+      font-weight: 500;
+    }
+    .__gmgv-settings > div > div > span:first-child {
+      flex: 1 1 auto;
+      margin-right: 20px;
+    }
+    .__gmgv-settings .__gmgv-close {
+      line-height: 0;
+      cursor: pointer;
+      position: relative;
+    }
+    .__gmgv-settings .__gmgv-close svg {
+      height: 24px;
+      width: 24px;
+    }
+    .__gmgv-settings .__gmgv-close:before {
+      content: "";
+      display: block;
+      position: absolute;
+      top: -12px;
+      left: -12px;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      transition: background 300ms;
+    }
+    .__gmgv-settings .__gmgv-close:hover:before {
+      background: rgba(0,0,0,0.12);
+    }
+    .__gmgv-settings label {
+      display: block;
+      margin-top: 24px;
+    }
+    .__gmgv-settings label > span {
+      display: block;
+      color: #00796b;
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 500;
+    }
+    .__gmgv-settings label > select {
+      display: block;
+      height: 36px;
+      width: 100%;
+      padding: 8px 0;
+      border: 0;
+      border-bottom: 1px solid rgba(0,0,0,0.12);
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 500;
+    }
+    .__gmgv-settings label option {
+      padding: 0;
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 500;
+    }
   `
     document.body.append(s)
 
     // Variables
     let container = null
+    let toggleButton = null
+    let settingsOverlay = null
     let forceReflow = () => {}
     let lastStyles = []
     let screenCaptureModeAllocations = new Map() // participantID -> order index
     let screenCaptureModeLookup = new Map() // `${name}|${presentation}|${dedupeID}` -> {id,active,order}
     let hiddenIDs = new Set()
     let ownID = null
-    let toggleButton = null
     let settings = {
       enabled: false,
+      'show-settings-overlay': false,
       'show-only-video': localStorage.getItem('gmgv-show-only-video') === 'true',
       'highlight-speaker': localStorage.getItem('gmgv-highlight-speaker') === 'true',
       'include-own-video': localStorage.getItem('gmgv-include-own-video') === 'true',
       'auto-enable': localStorage.getItem('gmgv-auto-enable') === 'true',
       'screen-capture-mode': localStorage.getItem('gmgv-screen-capture-mode') === 'true',
+      'bottom-toolbar': ['native', 'resize', 'force'].find(v => v === localStorage.getItem('gmgv-bottom-toolbar')) || 'resize',
+      'right-toolbar': ['native', 'resize'].find(v => v === localStorage.getItem('gmgv-right-toolbar')) || 'resize',
+      'own-video': ['native', 'flip'].find(v => v === localStorage.getItem('gmgv-own-video')) || 'native',
+      names: ['native', 'first-space', 'last-space'].find(v => v === localStorage.getItem('gmgv-names')) || 'native',
     }
 
     // Make the button to perform the toggle
@@ -475,6 +585,58 @@
       if (_container && _container !== container) {
         container = _container
         updateSetting('enabled', settings['enabled']) // When someone starts a presentation `container` will change under us, so we need to restart the grid
+      }
+
+      if (_container && !settingsOverlay) {
+        settingsOverlay = document.createElement('div')
+        settingsOverlay.classList.add('__gmgv-settings')
+        document.body.appendChild(settingsOverlay)
+        settingsOverlay.innerHTML = `
+          <div>
+            <div>
+              <span>${T('advancedSettingsTitle')}</span>
+              <span class="__gmgv-close"><svg viewBox="0 0 24 24">${close}</svg></span>
+            </div>
+            <label>
+              <span>${T('bottomToolbarBehavior')}</span>
+              <select data-gmgv-setting="bottom-toolbar">
+                <option value="native">${T('btbNative')}</option>
+                <option value="resize">${T('btbResize')}</option>
+                <option value="force">${T('btbForce')}</option>
+              </select>
+            </label>
+            <label>
+              <span>${T('rightToolbarBehavior')}</span>
+              <select data-gmgv-setting="right-toolbar">
+                <option value="native">${T('rtbNative')}</option>
+                <option value="resize">${T('rtbResize')}</option>
+              </select>
+            </label>
+            <label>
+              <span>${T('ownVideoBehavior')}</span>
+              <select data-gmgv-setting="own-video">
+                <option value="native">${T('ovbNative')}</option>
+                <option value="flip">${T('ovbFlip')}</option>
+              </select>
+            </label>
+            <label>
+              <span>${T('modifyNames')}</span>
+              <select data-gmgv-setting="names">
+                <option value="native">${T('mnNative')}</option>
+                <option value="first-space">${T('mnFirstSpace')}</option>
+                <option value="last-space">${T('mnLastSpace')}</option>
+              </select>
+            </label>
+          </div>
+        `
+        settingsOverlay.onclick = () => updateSetting('show-settings-overlay', false)
+        settingsOverlay.querySelector('div').onclick = e => e.stopPropagation()
+        settingsOverlay.querySelector('.__gmgv-close').onclick = () => updateSetting('show-settings-overlay', false)
+        settingsOverlay.querySelectorAll('select').forEach(el => {
+          const settingName = el.dataset.gmgvSetting
+          el.value = settings[settingName]
+          el.onchange = e => updateSetting(settingName, e.target.value)
+        })
       }
 
       const ownVideoPreview = document.querySelector('[data-fps-request-screencast-cap]')
@@ -506,6 +668,8 @@
             <label><input data-gmgv-setting="screen-capture-mode" type="checkbox" /> ${T('screenCaptureMode')}</label>
             <small>${T('screenCaptureModeDescription')}</small>
             <hr>
+            <a href="#">${T('advancedSettingsLink')}</a>
+            <hr>
             <div class="__gmgv-source-code">
               <small>v${version}</small>
               <a href="https://github.com/Fugiman/google-meet-grid-view" target="_blank">${T('sourceCode')}</a>
@@ -527,6 +691,10 @@
           el.checked = !!settings[settingName]
           el.onchange = e => updateSetting(settingName, e.target.checked)
         })
+        toggleButton.querySelector('a').onclick = e => {
+          e.preventDefault()
+          updateSetting('show-settings-overlay', true)
+        }
 
         updateSetting('screen-capture-mode', settings['screen-capture-mode'])
       }
@@ -814,46 +982,10 @@
         }
       }
 
-      // Finds the listing of map keys, and the object that contains it
-      let videoKeys, importantObject
-      for (let v of Object.values(this)) {
-        if (v && typeof v === 'object') {
-          for (let vv of Object.values(v)) {
-            if (Array.isArray(vv) && vv.length && vv.every(isSpacesStr)) {
-              if (videoKeys && vv != videoKeys) {
-                console.log('Invalid videoKeys search!', videoKeys, vv)
-                throw new Error('Failed')
-              } else {
-                videoKeys = vv
-                importantObject = v
-              }
-            }
-          }
-        }
-      }
-      if (!importantObject) {
-        throw new Error('No other participants, using default layout')
-      }
-
-      // Reusing the object we found earlier, find the map of participant data
-      let videoMap
-      for (let v of Object.values(importantObject)) {
-        if (v instanceof Map && v.size && Array.from(v.keys()).every(isSpacesStr)) {
-          videoMap = v
-        }
-      }
-
-      // Find our own participant data
-      let ownVideo = null
-      for (let v of Object.values(importantObject)) {
-        if (v && typeof v === 'object' && v.$goog_Thenable) {
-          for (let vv of Object.values(v)) {
-            if (isSpacesStr(vv)) {
-              ownVideo = videoMap.get(vv) || null
-            }
-          }
-        }
-      }
+      const importantObject = Object.values(this).find(v => v && v.constructor && /listener=new/.test(v.constructor.toString()))
+      const videoKeys = Object.values(importantObject).find(v => Array.isArray(v) && v.length && v.every(isSpacesStr)) || []
+      const videoMap = Object.values(importantObject).find(v => v instanceof Map && v.size && Array.from(v.keys()).every(isSpacesStr))
+      const ownVideo = Object.values(importantObject).filter(v => v && typeof v === 'object' && v.$goog_Thenable).map(v => videoMap.get(Object.values(v).find(isSpacesStr))).find(v => v) || null
       ownID = ownVideo.id
 
       // Use the map & map keys we found earlier to add every participant
@@ -883,7 +1015,7 @@
       }
 
       // Remove all those explicitly hidden
-      const activeIDs = new Set(ret.map(v => v[magicKey].getId()))
+      const activeIDs = new Set(ret.map(v => v[magicKey].id))
       ret = ret.filter(e => !hiddenIDs.has(e[magicKey].id))
 
       // Allocate slots for screen capture mode
@@ -908,8 +1040,8 @@
 
         ret = ret.filter(v => {
           const participant = v[magicKey]
-          const id = participant.getId()
-          const name = participant.getName()
+          const id = participant.id
+          const name = participant.name
           const presenting = !!participant.parent
 
           if (screenCaptureModeAllocations.has(id)) return true
@@ -941,8 +1073,33 @@
         addUniqueVideoElem(ret, ownVideo)
       }
 
-      // sort by participant name, or video id if the name is the same (when someone is presenting)
-      ret.sort((a, b) => a[magicKey].name.localeCompare(b[magicKey].name) || a[magicKey].id.localeCompare(b[magicKey].id))
+      // sort by id to avoid google meet swapping elements under us
+      ret.sort((a, b) => a[magicKey].id.localeCompare(b[magicKey].id))
+
+      // Transform participant names as requested
+      ret.forEach(a => {
+        const transform = {
+          native: n => n,
+          'first-space': n => ((p = n.split(' ')), (p[p.length - 1] += ','), p.push(p.shift()), p.join(' ')),
+          'last-space': n => ((p = n.split(' ')), (p[p.length - 1] += ','), p.unshift(p.pop()), p.join(' ')),
+        }[settings['names']]
+
+        a[magicKey].__gmgvName = a[magicKey].__gmgvName || a[magicKey].name
+        const name = transform(a[magicKey].__gmgvName)
+        for (let v of Object.values(a[magicKey])) {
+          if (v && typeof v === 'object') {
+            for (let vv of Object.values(v)) {
+              if (Array.isArray(vv) && vv.length > 3 && vv[0] === a[magicKey].id && vv[2].includes('googleusercontent.com')) {
+                vv[1] = name
+              }
+            }
+          }
+        }
+      })
+
+      // Calculate actual ordering based on name & id
+      const ordering = ret.map(a => ({ name: a[magicKey].name, id: a[magicKey].id }))
+      ordering.sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
 
       // Set Pinned Index for use in CSS loop. If there is no pin, use the presenter if available
       let pinnedIndex = ret.findIndex(v => v[magicKey].isPinned())
@@ -986,9 +1143,9 @@
 
       lastStyles = []
       for (let i = 0; i < ret.length; i++) {
-        const v = (lastStyles[i] = { el: children[i] })
+        const v = (lastStyles[i] = { el: children[i], name: ret[i][magicKey].name })
         if (settings['screen-capture-mode']) {
-          const idx = screenCaptureModeAllocations.get(ret[i][magicKey].getId())
+          const idx = screenCaptureModeAllocations.get(ret[i][magicKey].id)
           v.order = ''
           v.gridArea = `${1 + Math.floor(idx / cols)} / ${1 + (idx % cols)}` // row / column
         } else if (i === pinnedIndex) {
@@ -997,7 +1154,7 @@
           v.order = -1
           v.gridArea = `span ${spanRows} / span ${spanCols}`
         } else {
-          v.order = i
+          v.order = ordering.findIndex(o => o.id === ret[i][magicKey].id)
           v.gridArea = ''
         }
       }
@@ -1028,10 +1185,11 @@
       return sizes.reduce((a, b) => (a.size >= b.size ? a : b), {})
     }
 
-    function applyStyles({ el, order, gridArea }) {
+    function applyStyles({ el, order, gridArea, name }) {
       if (!el) return
       el.style.order = order
       el.style.gridArea = gridArea
+      el.querySelectorAll('[data-self-name]').forEach(d => { d.innerText = name })
     }
 
     function injectHideButton(el) {
@@ -1102,7 +1260,8 @@
       // Update the menu CSS
       if (toggleButton) {
         toggleButton.querySelector('svg').innerHTML = settings['enabled'] ? gridOn : gridOff
-        if (name !== 'enabled') toggleButton.querySelector(`input[data-gmgv-setting="${name}"]`).checked = value
+        const i = toggleButton.querySelector(`input[data-gmgv-setting="${name}"]`)
+        if (i) i.checked = value
 
         const showOnlyVideo = toggleButton.querySelector('input[data-gmgv-setting="show-only-video"]')
         showOnlyVideo.checked = settings['show-only-video'] && !settings['screen-capture-mode']
@@ -1118,10 +1277,22 @@
       // Update container CSS
       if (container) {
         container.classList.toggle('__gmgv-vid-container', settings['enabled'])
+        container.classList.toggle('__gmgv-btb-resize', settings['bottom-toolbar'] === 'resize')
+        container.classList.toggle('__gmgv-btb-force', settings['bottom-toolbar'] === 'force')
+        container.classList.toggle('__gmgv-rtb-resize', settings['right-toolbar'] === 'resize')
+        container.classList.toggle('__gmgv-flip-self', settings['own-video'] === 'flip')
         if (!settings['enabled']) {
           container.style.marginLeft = ''
           container.style.marginTop = ''
         }
+
+        const bottomBar = Array.from(container.parentElement.parentElement.children).find(el => el.clientHeight === 88)
+        bottomBar.style.transform = settings['enabled'] && settings['bottom-toolbar'] === 'force' ? 'translateY(0)' : ''
+      }
+
+      // Update settings CSS
+      if (settingsOverlay) {
+        settingsOverlay.style.display = settings['show-settings-overlay'] ? 'flex' : ''
       }
 
       // Update participant menu CSS
