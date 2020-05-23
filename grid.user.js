@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.30
+// @version      1.31
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -704,75 +704,84 @@
       // This code is fairly hairy but basically just iterates through all the exposed functions until we find the
       // ones that roughly match the code we're looking for by running regexs on the function source code.
       // We can then parse that code to get variable names out and use javascript Proxys to override them.
-      if (window.default_MeetingsUi) {
-        let m
+      if (window.default_MeetingsUi && !window.default_MeetingsUi.__grid_ran) {
+        let m,
+          hooks = []
         for (let [_k, v] of Object.entries(window.default_MeetingsUi)) {
           if (v && v.prototype) {
             for (let k of Object.keys(v.prototype)) {
               const p = Object.getOwnPropertyDescriptor(v.prototype, k)
-              if (p && p.value && !v.prototype[k].__grid_ran) {
-                // this.XX.get(_).YY(this._)
-                m = /this\.([A-Za-z]+)\.get\([A-Za-z]+\)\.([A-Za-z]+)\(this\.[A-Za-z]+\)/.exec(p.value.toString())
-                if (m) {
-                  console.log('[google-meet-grid-view] Successfully hooked into rendering pipeline', v.prototype[k])
-                  const p = new Proxy(v.prototype[k], RefreshVideoProxyHandler(m[1], m[2]))
-                  p.__grid_ran = true
-                  v.prototype[k] = p
-                }
-
+              if (p && p.value) {
                 // this.XX.getVolume()
                 m = /this\.([A-Za-z]+)\.getVolume\(\)/.exec(p.value.toString())
                 if (m) {
-                  console.log('[google-meet-grid-view] Successfully hooked into volume detection', v.prototype[k])
-                  const p = new Proxy(v.prototype[k], VolumeDetectionProxyHandler(m[1]))
-                  p.__grid_ran = true
-                  v.prototype[k] = p
+                  const m1 = m[1]
+                  hooks.push(() => {
+                    console.log('[google-meet-grid-view] Successfully hooked into volume detection', v.prototype[k])
+                    v.prototype[k] = new Proxy(v.prototype[k], VolumeDetectionProxyHandler(m1))
+                  })
                 }
 
                 // reflow(unknown, force)
                 m = /function\(a,b\){if\(this\.([A-Za-z]+)!==a\|\|\(void 0===b\?0:b\)\)this\.([A-Za-z]+)=a,this\.([A-Za-z]+)\(_\.([A-Za-z]+)\)}/.exec(p.value.toString())
                 if (m) {
-                  console.log('[google-meet-grid-view] Successfully hooked into reflow trigger', v.prototype[k])
-                  const p = new Proxy(v.prototype[k], ReflowProxyHandler())
-                  p.__grid_ran = true
-                  v.prototype[k] = p
+                  hooks.push(() => {
+                    console.log('[google-meet-grid-view] Successfully hooked into reflow trigger', v.prototype[k])
+                    v.prototype[k] = new Proxy(v.prototype[k], ReflowProxyHandler())
+                  })
                 }
 
                 m = /function\(a\){return .*\.appendChild\(/.exec(p.value.toString())
                 if (m) {
-                  console.log('[google-meet-grid-view] Successfully hooked into append handler', v.prototype[k])
-                  const p = new Proxy(v.prototype[k], AppendProxyHandler())
-                  p.__grid_ran = true
-                  v.prototype[k] = p
+                  hooks.push(() => {
+                    console.log('[google-meet-grid-view] Successfully hooked into append handler', v.prototype[k])
+                    v.prototype[k] = new Proxy(v.prototype[k], AppendProxyHandler())
+                  })
                 }
               }
             }
           }
-          if (v && typeof v === 'function' && !v.__grid_ran) {
+          if (v && typeof v === 'function') {
             m = /function\(a,b,c\){return!0===c\?/.exec(v.toString())
             if (m) {
-              console.log('[google-meet-grid-view] Successfully hooked into chat/bottom-bar toggle', v)
-              const p = new Proxy(v, ToggleProxyHandler())
-              p.__grid_ran = true
-              window.default_MeetingsUi[_k] = p
+              hooks.push(() => {
+                console.log('[google-meet-grid-view] Successfully hooked into chat/bottom-bar toggle', v)
+                window.default_MeetingsUi[_k] = new Proxy(v, ToggleProxyHandler())
+              })
             }
 
             m = /function\(a,b\){a\.style\.display=b\?/.exec(v.toString())
             if (m) {
-              console.log('[google-meet-grid-view] Successfully hooked into caption toggle', v)
-              const p = new Proxy(v, CaptionProxyHandler())
-              p.__grid_ran = true
-              window.default_MeetingsUi[_k] = p
-            }
-
-            m = /\.([A-Za-z]+)\.get\(.*window\.innerWidth,window\.innerHeight\)\);[A-Za-z]+=[A-Za-z]+\.([A-Za-z]+)\(/.exec(v.toString())
-            if (m) {
-              console.log('[google-meet-grid-view] Successfully hooked into rendering pipeline v2', v)
-              const p = new Proxy(v, RefreshVideoProxyHandlerV2(m[1], m[2]))
-              p.__grid_ran = true
-              window.default_MeetingsUi[_k] = p
+              hooks.push(() => {
+                console.log('[google-meet-grid-view] Successfully hooked into caption toggle', v)
+                window.default_MeetingsUi[_k] = new Proxy(v, CaptionProxyHandler())
+              })
             }
           }
+        }
+        if (hooks.length === 5) {
+          hooks.forEach(h => h())
+
+          window.default_MeetingsUi = new Proxy(window.default_MeetingsUi, {
+            set: function (obj, prop, value) {
+              if (value && typeof value === 'function') {
+                const m = /\.([A-Za-z]+)\([a-zA-Z,.]+\{[^\x05]*?Infinity[^\x05]*?this\.([A-Za-z]+)=[A-Za-z]+\(this\)/.exec(value.toString())
+                if (m) {
+                  value = new Proxy(value, {
+                    construct: function (target, argumentsList) {
+                      const ret = Reflect.construct(target, argumentsList)
+                      ret[m[2]] = new Proxy(ret[m[2]], LayoutVideoProxyHandler(ret, m[1]))
+                      console.log('[google-meet-grid-view] Successfully hooked into rendering pipeline v3', ret)
+                      return ret
+                    },
+                  })
+                }
+              }
+              return Reflect.set(obj, prop, value)
+            },
+          })
+
+          window.default_MeetingsUi.__grid_ran = true
         }
       }
 
@@ -782,33 +791,6 @@
         if (settings['auto-enable']) updateSetting('enabled', true)
       }
     }, 1000)
-
-    // This overrides the function that handles laying out video.
-    // All we do here is install another proxy on the Map that returns which layout to use
-    function RefreshVideoProxyHandler(objKey, funcKey) {
-      return {
-        apply: function (target, thisArg, argumentsList) {
-          if (!thisArg[objKey].__grid_ran) {
-            const p = new Proxy(thisArg[objKey], LayoutVideoProxyHandler(thisArg, funcKey))
-            p.__grid_ran = true
-            thisArg[objKey] = p
-          }
-          return target.apply(thisArg, argumentsList)
-        },
-      }
-    }
-    function RefreshVideoProxyHandlerV2(objKey, funcKey) {
-      return {
-        apply: function (target, thisArg, argumentsList) {
-          if (!argumentsList[0][objKey].__grid_ran) {
-            const p = new Proxy(argumentsList[0][objKey], LayoutVideoProxyHandler(argumentsList[0], funcKey))
-            p.__grid_ran = true
-            argumentsList[0][objKey] = p
-          }
-          return target.apply(thisArg, argumentsList)
-        },
-      }
-    }
 
     // This overrides the Map that returns which layout to use, as called by the above Proxy
     // If grid view is enabled we always try to call our custom layout function.
@@ -824,6 +806,11 @@
           if (settings['enabled'] && name == 'get') {
             return idx => ({
               [funcKey]: (videoOrdering, windowData) => {
+                // idx mapping:
+                // 2 = tiled?
+                // 3 = spotlight
+                // 4 = sidebar
+                // 5 = auto?
                 try {
                   return GridLayout.call(parent, videoOrdering, windowData)
                 } catch (e) {
@@ -926,8 +913,10 @@
             injectHideButton(v)
             if (settings['enabled']) {
               const i = +v.dataset.allocationIndex
-              lastStyles[i].el = v
-              applyStyles(lastStyles[i])
+              if (i < lastStyles.length) {
+                lastStyles[i].el = v
+                applyStyles(lastStyles[i])
+              }
             }
           }
           // Detect when participant options are expanded
@@ -985,7 +974,11 @@
       const importantObject = Object.values(this).find(v => v && v.constructor && /listener=new/.test(v.constructor.toString()))
       const videoKeys = Object.values(importantObject).find(v => Array.isArray(v) && v.length && v.every(isSpacesStr)) || []
       const videoMap = Object.values(importantObject).find(v => v instanceof Map && v.size && Array.from(v.keys()).every(isSpacesStr))
-      const ownVideo = Object.values(importantObject).filter(v => v && typeof v === 'object' && v.$goog_Thenable).map(v => videoMap.get(Object.values(v).find(isSpacesStr))).find(v => v) || null
+      const ownVideo =
+        Object.values(importantObject)
+          .filter(v => v && typeof v === 'object' && v.$goog_Thenable)
+          .map(v => videoMap.get(Object.values(v).find(isSpacesStr)))
+          .find(v => v) || null
       ownID = ownVideo.id
 
       // Use the map & map keys we found earlier to add every participant
@@ -1080,8 +1073,18 @@
       ret.forEach(a => {
         const transform = {
           native: n => n,
-          'first-space': n => ((p = n.split(' ')), (p[p.length - 1] += ','), p.push(p.shift()), p.join(' ')),
-          'last-space': n => ((p = n.split(' ')), (p[p.length - 1] += ','), p.unshift(p.pop()), p.join(' ')),
+          'first-space': n => {
+            let p = n.split(' ')
+            p[p.length - 1] += ','
+            p.push(p.shift())
+            return p.join(' ')
+          },
+          'last-space': n => {
+            let p = n.split(' ')
+            p[p.length - 1] += ','
+            p.unshift(p.pop())
+            return p.join(' ')
+          },
         }[settings['names']]
 
         a[magicKey].__gmgvName = a[magicKey].__gmgvName || a[magicKey].name
@@ -1112,54 +1115,55 @@
       const size = calculateVideoSize(ret.length, pinnedIndex >= 0)
       const setVideoQuality = magicSet(settings['screen-capture-mode'] ? 0 : size.height >= 200 ? 2 : 1)
       ret.forEach(setVideoQuality)
+      if (pinnedIndex >= 0) magicSet(0)(ret[pinnedIndex])
 
       // Build CSS changes
-      let { cols, rows } = size
-      if (settings['screen-capture-mode']) {
-        cols = rows = Math.ceil(Math.sqrt(screenCaptureModeLookup.size - hiddenSize))
-        const mul = Math.floor(Math.min((innerWidth - 327) / (cols * 16), (innerHeight - 140) / (cols * 9)))
-        container.style.marginLeft = `${innerWidth - 325 - mul * cols * 16}px`
-        container.style.marginTop = `${innerHeight - 140 - mul * cols * 9}px`
-      } else {
-        container.style.marginLeft = ''
-        container.style.marginTop = ''
-      }
-      container.classList.toggle('__gmgv-screen-capture-mode', settings['screen-capture-mode'])
-      container.style.gridTemplateColumns = `repeat(${cols}, 1fr)`
-      container.style.gridTemplateRows = settings['screen-capture-mode'] ? `repeat(${rows}, 1fr)` : ''
-
-      const divTests = [/this\.src=/, /Object/, /Array/, /this\.listener=/, /\.model.*\(this\)/, /HTMLDivElement/]
-      const children = ret.map(e => {
-        let values = [e[magicKey]]
-        for (let t of divTests) {
-          let newValues = []
-          for (let v of values) {
-            newValues = newValues.concat(Object.values(v).filter(vv => vv && vv.constructor && t.test(vv.constructor.toString())))
-          }
-          values = newValues
-        }
-        return values.filter(v => v.parentElement === container)[0]
-      })
-
-      lastStyles = []
-      for (let i = 0; i < ret.length; i++) {
-        const v = (lastStyles[i] = { el: children[i], name: ret[i][magicKey].name })
+      if (container) {
+        let { cols, rows } = size
         if (settings['screen-capture-mode']) {
-          const idx = screenCaptureModeAllocations.get(ret[i][magicKey].id)
-          v.order = ''
-          v.gridArea = `${1 + Math.floor(idx / cols)} / ${1 + (idx % cols)}` // row / column
-        } else if (i === pinnedIndex) {
-          const spanCols = Math.ceil(cols / 2)
-          const spanRows = Math.floor((cols * rows - (ret.length - 1)) / spanCols)
-          v.order = -1
-          v.gridArea = `span ${spanRows} / span ${spanCols}`
+          cols = rows = Math.ceil(Math.sqrt(screenCaptureModeLookup.size - hiddenSize))
+          const mul = Math.floor(Math.min((innerWidth - 327) / (cols * 16), (innerHeight - 140) / (cols * 9)))
+          container.style.marginLeft = `${innerWidth - 325 - mul * cols * 16}px`
+          container.style.marginTop = `${innerHeight - 140 - mul * cols * 9}px`
         } else {
-          v.order = ordering.findIndex(o => o.id === ret[i][magicKey].id)
-          v.gridArea = ''
+          container.style.marginLeft = ''
+          container.style.marginTop = ''
         }
-      }
+        container.classList.toggle('__gmgv-screen-capture-mode', settings['screen-capture-mode'])
+        container.style.gridTemplateColumns = `repeat(${cols}, 1fr)`
+        container.style.gridTemplateRows = settings['screen-capture-mode'] ? `repeat(${rows}, 1fr)` : ''
 
-      lastStyles.forEach(applyStyles)
+        const divTests = [/this\.src=/, /Object/, /Array/, /this\.listener=/, /\.model.*\(this\)/, /HTMLDivElement/]
+        const children = ret.map(e => {
+          let values = [e[magicKey]]
+          for (let t of divTests) {
+            let newValues = []
+            for (let v of values) {
+              newValues = newValues.concat(Object.values(v).filter(vv => vv && vv.constructor && t.test(vv.constructor.toString())))
+            }
+            values = newValues
+          }
+          return values.filter(v => v.parentElement === container)[0]
+        })
+
+        lastStyles = []
+        for (let i = 0; i < ret.length; i++) {
+          const v = (lastStyles[i] = { el: children[i], name: ret[i][magicKey].name })
+          if (settings['screen-capture-mode']) {
+            const idx = screenCaptureModeAllocations.get(ret[i][magicKey].id)
+            v.order = ''
+            v.gridArea = `${1 + Math.floor(idx / cols)} / ${1 + (idx % cols)}` // row / column
+          } else if (i === pinnedIndex) {
+            v.order = -1
+            v.gridArea = `span ${size.pinnedRows} / span ${size.pinnedCols}`
+          } else {
+            v.order = ordering.findIndex(o => o.id === ret[i][magicKey].id)
+            v.gridArea = ''
+          }
+        }
+
+        lastStyles.forEach(applyStyles)
+      }
 
       // Build a video list from the ordered output
       return new VideoList(ret)
@@ -1167,19 +1171,33 @@
 
     function calculateVideoSize(n, hasPin) {
       let sizes = []
-      const w = (innerWidth - 4) / 14
-      const h = (innerHeight - 52) / 9
+      const iw = innerWidth - 4
+      const ih = innerHeight - 52
+      const w = iw / 14 // width normalized to 14/9
+      const h = ih / 9 // height normalized to 14/9
       for (let cols = 1; cols <= 30; cols++) {
-        const rows = !hasPin ? Math.ceil(n / cols) : Math.ceil((Math.ceil(cols / 2) ** 2 + n - 1) / cols)
-        // If hasPin, calculate the actual minimum area of the pin (1/4th screen) and see if it fits
-        const canFit = Math.ceil(rows / 2) * Math.ceil(cols / 2) + n - 1 <= rows * cols
-        if (hasPin && !canFit) continue
+        let rows = Math.ceil(n / cols)
+        let pinnedCols = 1
+        let pinnedRows = 1
+        if (hasPin) {
+          // We want the pinned area to be 1/4th the screen but a 16/9 ratio
+          const pinnedArea = (iw * ih) / 4
+          const pw = Math.sqrt(pinnedArea * (16 / 9))
+          const ph = (9 / 16) * pw
+          pinnedCols = Math.ceil((cols * pw) / iw)
+          for (let canFit = false; !canFit; rows++) {
+            pinnedRows = Math.ceil((rows * ph) / ih)
+            canFit = rows * cols >= pinnedRows * pinnedCols + n - 1
+          }
+        }
         const size = Math.min(w / cols, h / rows)
         sizes.push({
           cols,
           rows,
           size,
-          height: (innerHeight - 52) / rows,
+          height: ih / rows,
+          pinnedRows,
+          pinnedCols,
         })
       }
       return sizes.reduce((a, b) => (a.size >= b.size ? a : b), {})
@@ -1189,7 +1207,9 @@
       if (!el) return
       el.style.order = order
       el.style.gridArea = gridArea
-      el.querySelectorAll('[data-self-name]').forEach(d => { d.innerText = name })
+      el.querySelectorAll('[data-self-name]').forEach(d => {
+        d.innerText = name
+      })
     }
 
     function injectHideButton(el) {
@@ -1205,6 +1225,7 @@
           <div>${T('hideParticipant')}</div>
         </div>
       `
+      b.onmousedown = e => e.stopPropagation()
       b.onclick = e => {
         e.preventDefault()
         const id = el.dataset.requestedParticipantId
