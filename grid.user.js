@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.31
+// @version      1.32
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -169,6 +169,22 @@
         unauthorizedWarning: 'ATTENZIONE: Questa estensione non è autorizzata. Installa la versione ufficiale cliccando qui.',
         hideParticipant: 'Nascondi partecipante',
         showParticipant: 'Mostra partecipante',
+        advancedSettingsLink: 'Impostazioni avanzate',
+        advancedSettingsTitle: 'Impostazioni avanzate di Google Meet Grid View',
+        bottomToolbarBehavior: 'Comportamento della barra in basso',
+        btbNative: 'Nascondi la griglia, mentre la barra è visibile',
+        btbResize: 'Ridimensiona la griglia, mentre la barra è visibile',
+        btbForce: 'Mostra sempre la barra e ridimensiona la griglia',
+        rightToolbarBehavior: 'Aspetto chat e persone',
+        rtbNative: 'Nascondi la griglia, quando è visibile la chat',
+        rtbResize: 'Ridimensiona la griglia, quando è visibile la chat',
+        ownVideoBehavior: 'Aspetto del proprio video nella griglia',
+        ovbNative: 'Mantieni il video riflesso',
+        ovbFlip: 'Mostra il video come lo vedono gli altri',
+        modifyNames: 'Modifica i nomi dei partecipanti',
+        mnNative: 'Nessuna modifica ("Alpha Bravo Charlie")',
+        mnFirstSpace: 'Sposta la prima parola alla fine ("Bravo Charlie, Alpha")',
+        mnLastSpace: 'Sposta l\'ultima parola all\'inizio ("Charlie, Alpha Bravo")',
       },
       ja: {
         showOnlyVideo: 'カメラをオンにしている参加者のみ',
@@ -723,84 +739,81 @@
       // This code is fairly hairy but basically just iterates through all the exposed functions until we find the
       // ones that roughly match the code we're looking for by running regexs on the function source code.
       // We can then parse that code to get variable names out and use javascript Proxys to override them.
-      if (window.default_MeetingsUi && !window.default_MeetingsUi.__grid_ran) {
-        let m,
-          hooks = []
+      if (window.default_MeetingsUi) {
+        let m
         for (let [_k, v] of Object.entries(window.default_MeetingsUi)) {
           if (v && v.prototype) {
             for (let k of Object.keys(v.prototype)) {
               const p = Object.getOwnPropertyDescriptor(v.prototype, k)
-              if (p && p.value) {
+              if (p && p.value && !v.prototype[k].__grid_ran) {
+                // this.XX.get(_).YY(this._)
+                m = /this\.([A-Za-z]+)\.get\([A-Za-z]+\)\.([A-Za-z]+)\(this\.[A-Za-z]+\)/.exec(p.value.toString())
+                if (m) {
+                  console.log('[google-meet-grid-view] Successfully hooked into rendering pipeline', v.prototype[k])
+                  const p = new Proxy(v.prototype[k], RefreshVideoProxyHandler(m[1], m[2]))
+                  p.__grid_ran = true
+                  v.prototype[k] = p
+                }
+
                 // this.XX.getVolume()
                 m = /this\.([A-Za-z]+)\.getVolume\(\)/.exec(p.value.toString())
                 if (m) {
-                  const m1 = m[1]
-                  hooks.push(() => {
-                    console.log('[google-meet-grid-view] Successfully hooked into volume detection', v.prototype[k])
-                    v.prototype[k] = new Proxy(v.prototype[k], VolumeDetectionProxyHandler(m1))
-                  })
+                  console.log('[google-meet-grid-view] Successfully hooked into volume detection', v.prototype[k])
+                  const p = new Proxy(v.prototype[k], VolumeDetectionProxyHandler(m[1]))
+                  p.__grid_ran = true
+                  v.prototype[k] = p
                 }
 
                 // reflow(unknown, force)
-                m = /function\(a,b\){if\(this\.([A-Za-z]+)!==a\|\|\(void 0===b\?0:b\)\)this\.([A-Za-z]+)=a,this\.([A-Za-z]+)\(_\.([A-Za-z]+)\)}/.exec(p.value.toString())
+                m = /{if\(this\.([A-Za-z]+)!==[A-Za-z]+\|\|\(void 0===[A-Za-z]+\?0:[A-Za-z]+\)\)this\.([A-Za-z]+)=[A-Za-z]+,this\.([A-Za-z]+)\(_\.([A-Za-z]+)\)}/.exec(p.value.toString())
                 if (m) {
-                  hooks.push(() => {
-                    console.log('[google-meet-grid-view] Successfully hooked into reflow trigger', v.prototype[k])
-                    v.prototype[k] = new Proxy(v.prototype[k], ReflowProxyHandler())
-                  })
+                  console.log('[google-meet-grid-view] Successfully hooked into reflow trigger', v.prototype[k])
+                  const p = new Proxy(v.prototype[k], ReflowProxyHandler())
+                  p.__grid_ran = true
+                  v.prototype[k] = p
                 }
 
                 m = /function\(a\){return .*\.appendChild\(/.exec(p.value.toString())
                 if (m) {
-                  hooks.push(() => {
-                    console.log('[google-meet-grid-view] Successfully hooked into append handler', v.prototype[k])
-                    v.prototype[k] = new Proxy(v.prototype[k], AppendProxyHandler())
-                  })
+                  console.log('[google-meet-grid-view] Successfully hooked into append handler', v.prototype[k])
+                  const p = new Proxy(v.prototype[k], AppendProxyHandler())
+                  p.__grid_ran = true
+                  v.prototype[k] = p
                 }
               }
             }
           }
-          if (v && typeof v === 'function') {
+          if (v && typeof v === 'function' && !v.__grid_ran) {
             m = /function\(a,b,c\){return!0===c\?/.exec(v.toString())
             if (m) {
-              hooks.push(() => {
-                console.log('[google-meet-grid-view] Successfully hooked into chat/bottom-bar toggle', v)
-                window.default_MeetingsUi[_k] = new Proxy(v, ToggleProxyHandler())
-              })
+              console.log('[google-meet-grid-view] Successfully hooked into chat/bottom-bar toggle', v)
+              const p = new Proxy(v, ToggleProxyHandler())
+              p.__grid_ran = true
+              window.default_MeetingsUi[_k] = p
             }
 
             m = /function\(a,b\){a\.style\.display=b\?/.exec(v.toString())
             if (m) {
-              hooks.push(() => {
-                console.log('[google-meet-grid-view] Successfully hooked into caption toggle', v)
-                window.default_MeetingsUi[_k] = new Proxy(v, CaptionProxyHandler())
-              })
+              console.log('[google-meet-grid-view] Successfully hooked into caption toggle', v)
+              const p = new Proxy(v, CaptionProxyHandler())
+              p.__grid_ran = true
+              window.default_MeetingsUi[_k] = p
+            }
+
+            m = /\.([A-Za-z]+)\.get\(.*window\.innerWidth,window\.innerHeight\)\);[A-Za-z]+=[A-Za-z]+\.([A-Za-z]+)\(/.exec(v.toString())
+            if (m) {
+              console.log('[google-meet-grid-view] Successfully hooked into rendering pipeline v2', v)
+              const p = new Proxy(v, RefreshVideoProxyHandlerV2(m[1], m[2]))
+              p.__grid_ran = true
+              window.default_MeetingsUi[_k] = p
             }
           }
         }
-        if (hooks.length === 5) {
-          hooks.forEach(h => h())
-
-          window.default_MeetingsUi = new Proxy(window.default_MeetingsUi, {
-            set: function (obj, prop, value) {
-              if (value && typeof value === 'function') {
-                const m = /\.([A-Za-z]+)\([a-zA-Z,.]+\{[^\x05]*?Infinity[^\x05]*?this\.([A-Za-z]+)=[A-Za-z]+\(this\)/.exec(value.toString())
-                if (m) {
-                  value = new Proxy(value, {
-                    construct: function (target, argumentsList) {
-                      const ret = Reflect.construct(target, argumentsList)
-                      ret[m[2]] = new Proxy(ret[m[2]], LayoutVideoProxyHandler(ret, m[1]))
-                      console.log('[google-meet-grid-view] Successfully hooked into rendering pipeline v3', ret)
-                      return ret
-                    },
-                  })
-                }
-              }
-              return Reflect.set(obj, prop, value)
-            },
-          })
-
-          window.default_MeetingsUi.__grid_ran = true
+        if (!window.default_MeetingsUi.__grid_ran) {
+          console.log('[google-meet-grid-view] Successfully hooked into meetings UI')
+          const p = new Proxy(window.default_MeetingsUi, MeetingsUIProxyHandler())
+          p.__grid_ran = true
+          window.default_MeetingsUi = p
         }
       }
 
@@ -810,6 +823,59 @@
         if (settings['auto-enable']) updateSetting('enabled', true)
       }
     }, 1000)
+
+    // This overrides the function that handles laying out video.
+    // All we do here is install another proxy on the Map that returns which layout to use
+    function RefreshVideoProxyHandler(objKey, funcKey) {
+      return {
+        apply: function (target, thisArg, argumentsList) {
+          if (!thisArg[objKey].__grid_ran) {
+            console.log('[google-meet-grid-view] Successfully hooked into video layout', thisArg[objKey])
+            const p = new Proxy(thisArg[objKey], LayoutVideoProxyHandler(thisArg, funcKey))
+            p.__grid_ran = true
+            thisArg[objKey] = p
+          }
+          return target.apply(thisArg, argumentsList)
+        },
+      }
+    }
+    function RefreshVideoProxyHandlerV2(objKey, funcKey) {
+      return {
+        apply: function (target, thisArg, argumentsList) {
+          if (!argumentsList[0][objKey].__grid_ran) {
+            console.log('[google-meet-grid-view] Successfully hooked into video layout', argumentsList[0][objKey])
+            const p = new Proxy(argumentsList[0][objKey], LayoutVideoProxyHandler(argumentsList[0], funcKey))
+            p.__grid_ran = true
+            argumentsList[0][objKey] = p
+          }
+          return target.apply(thisArg, argumentsList)
+        },
+      }
+    }
+    function MeetingsUIProxyHandler() {
+      return {
+        set: function (obj, prop, value) {
+          if (value && typeof value === 'function') {
+            const m = /\.([A-Za-z]+)\([a-zA-Z,.]+\{[^\x05]*?Infinity[^\x05]*?this\.([A-Za-z]+)=[A-Za-z]+\(this\)/.exec(value.toString())
+            if (m) {
+              console.log('[google-meet-grid-view] Successfully hooked into rendering pipeline v3', value)
+              value = new Proxy(value, RefreshVideoProxyHandlerV3(m[2], m[1]))
+            }
+          }
+          return Reflect.set(obj, prop, value)
+        },
+      }
+    }
+    function RefreshVideoProxyHandlerV3(objKey, funcKey) {
+      return {
+        construct: function (target, argumentsList) {
+          const ret = Reflect.construct(target, argumentsList)
+          console.log('[google-meet-grid-view] Successfully hooked into video layout', ret)
+          ret[objKey] = new Proxy(ret[objKey], LayoutVideoProxyHandler(ret, funcKey))
+          return ret
+        },
+      }
+    }
 
     // This overrides the Map that returns which layout to use, as called by the above Proxy
     // If grid view is enabled we always try to call our custom layout function.
