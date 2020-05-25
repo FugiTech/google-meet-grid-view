@@ -7,6 +7,9 @@ assignees: Fugiman
 
 ---
 
+**I have NOT searched if the bug I am going to report has already been reported both in closed and open issues**
+Remove NOT after having done it.
+
 **Describe what is broken**
 A clear and concise description of what isn't working.
 
