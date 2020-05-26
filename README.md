@@ -20,7 +20,13 @@ Userscript: https://greasyfork.org/en/scripts/397862-google-meet-grid-view
 
 ## Privacy Policy
 
-This extension does not track any user data, and therefore does not have a detailed privacy policy. If this is insufficient please email fugiman47+grid-view-extension@gmail.com
+This extension does not track any user data.  
+There is no detailed privacy policy as there is nothing to explain.  
+Your data can not be stored, as it does not exist.   
+Your data can not be shared, as it does not exist.   
+Your data can not be sold, as it does not exist.  
+
+If this is insufficient please email fugiman47+grid-view-extension@gmail.com . Please note that I do not have a scanner and therefore can't sign physical documents.
 
 ## License
 
