@@ -1224,23 +1224,23 @@
       ret.sort((a, b) => a[magicKey].id.localeCompare(b[magicKey].id))
 
       // Transform participant names as requested
-      ret.forEach(a => {
-        const transform = {
-          native: n => n,
-          'first-space': n => {
-            let p = n.split(' ')
-            p[p.length - 1] += ','
-            p.push(p.shift())
-            return p.join(' ')
-          },
-          'last-space': n => {
-            let p = n.split(' ')
-            p[p.length - 1] += ','
-            p.unshift(p.pop())
-            return p.join(' ')
-          },
-        }[settings['names']]
+      const transform = {
+        native: n => n,
+        'first-space': n => {
+          let p = n.split(' ')
+          p[p.length - 1] += ','
+          p.push(p.shift())
+          return p.join(' ')
+        },
+        'last-space': n => {
+          let p = n.split(' ')
+          p[p.length - 1] += ','
+          p.unshift(p.pop())
+          return p.join(' ')
+        },
+      }[settings['names']]
 
+      ret.forEach(a => {
         a[magicKey].__gmgvName = a[magicKey].__gmgvName || a[magicKey].name
         const name = transform(a[magicKey].__gmgvName)
         for (let v of Object.values(a[magicKey])) {
@@ -1255,7 +1255,10 @@
       })
 
       // Calculate actual ordering based on name & id
-      const ordering = ret.map(a => ({ name: a[magicKey].name, id: a[magicKey].id }))
+      const ordering = ret.map(a => ({
+        name: transform(a[magicKey].__gmgvName || a[magicKey].name),
+        id: a[magicKey].id,
+       }))
       ordering.sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
 
       // Set Pinned Index for use in CSS loop. If there is no pin, use the presenter if available
