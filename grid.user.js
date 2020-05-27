@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.32
+// @version      1.33
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -36,17 +36,35 @@
   function TranslationFactory() {
     const translations = {
       ca: {
-        showOnlyVideo: 'Mostra només els participants amb video',
+        showOnlyVideo: 'Mostra només els participants amb vídeo',
         highlightSpeaker: 'Ressalta els que parlen',
-        includeOwnVideo: 'Inclou el meu video a la graella',
-        autoEnable: 'Habilita la vista en graella de manera predeterminada',
-        notRunning: "La vista en graella no s'està executant en aquesta pàgina",
-        noMeeting: "La vista en graella no s'executarà fins que no et connectis a una trucada",
-        enabled: 'Activar vista en graella',
+        includeOwnVideo: 'Inclou el meu vídeo a la graella',
+        autoEnable: 'Habilita la visualització en graella de manera predeterminada',
+        notRunning: "La visualització en graella no s'està executant en aquesta pàgina",
+        noMeeting: "La visualització en graella no s'executarà fins que no us uniu a una reunió",
+        enabled: 'Activa la visualització en graella',
         sourceCode: 'Codi font disponible a GitHub',
-        screenCaptureMode: 'Activar mode de captura',
-        screenCaptureModeDescription: 'Força 16:9, desactiva els noms, bloqueja vídeos al seu lloc',
+        screenCaptureMode: 'Activa el mode captura de pantalla',
+        screenCaptureModeDescription: 'Força 16:9, desactiva els noms, bloqueja els vídeos al seu lloc',
         unauthorizedWarning: "ATENCIÓ: es tracta d'una extensió no autoritzada. Instal·leu l'extensió oficial fent clic aquí.",
+        hideParticipant: 'Amaga el participant',
+        showParticipant: 'Mostra el participant',
+        advancedSettingsLink: 'Mostra la configuració avançada',
+        advancedSettingsTitle: 'Configuració avançada de Google Meet Grid View',
+        bottomToolbarBehavior: "Comportament de la barra d'eines inferior",
+        btbNative: "Enfosqueix la graella quan es mostri la barra d'eines",
+        btbResize: "Canvia la mida de la graella quan es mostri la barra d'eines",
+        btbForce: "Mostra sempre la barra d'eines i canvia la mida de la graella",
+        rightToolbarBehavior: 'Comportament del xat i el llistat de persones',
+        rtbNative: 'Enfosqueix la graella quan es mostri el xat',
+        rtbResize: 'Canvia la mida de la graella quan es mostri el xat',
+        ownVideoBehavior: 'Comportament del propi vídeo',
+        ovbNative: "Mantén l'efecte mirall",
+        ovbFlip: 'Capgira el vídeo tal com et veuen els altres',
+        modifyNames: 'Canvi dels noms dels participants',
+        mnNative: 'Sense canvis ("Marta Vila Puig")',
+        mnFirstSpace: 'Mou la primera paraula al final ("Vila Puig, Marta")',
+        mnLastSpace: 'Mou l\'última paraula al principi ("Puig, Marta Vila")',
       },
       da: {
         showOnlyVideo: 'Vis kun deltagere med video',
@@ -88,6 +106,7 @@
         screenCaptureMode: 'Enable Screen Capture Mode',
         screenCaptureModeDescription: 'Forces 16:9, Disables names, Locks videos in place',
         unauthorizedWarning: 'WARNING: This is an unauthorized extension. Please install the official release by clicking here.',
+        duplicateWarning: 'Multiple Grid View extensions detected. Please uninstall duplicates.',
         hideParticipant: 'Hide Participant',
         showParticipant: 'Show Participant',
         advancedSettingsLink: 'View Advanced Settings',
@@ -321,6 +340,7 @@
     const visibilityOn =
       '<path fill="currentColor" d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" />'
     const close = '<path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />'
+    const alert = '<path fill="currentColor" d="M13,14H11V10H13M13,18H11V16H13M1,21H23L12,2L1,21Z" />'
 
     // Create the styles we need
     const s = document.createElement('style')
@@ -379,6 +399,10 @@
     .__gmgv-vid-container > div > div:first-child {
       z-index: -2;
     }
+    .__gmgv-vid-container > div > div {
+      display: flex !important;
+      opacity: 1 !important;
+    }
     .__gmgv-vid-container:not(.__gmgv-screen-capture-mode) > div.__gmgv-speaking:after {
       transition: opacity 60ms linear;
       opacity: 1;
@@ -386,6 +410,20 @@
     }
     .__gmgv-vid-container.__gmgv-flip-self video {
       transform: scaleX(1) !important;
+    }
+
+    .__gmgv-duplicate-warning {
+      color: #d93025;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      margin: 0 12px;
+      font-weight: bold;
+    }
+    .__gmgv-duplicate-warning > svg {
+      height: 36px;
+      width: 36px;
+      margin-right: 6px;
     }
 
     .__gmgv-button {
@@ -676,6 +714,30 @@
 
       const ownVideoPreview = document.querySelector('[data-fps-request-screencast-cap]')
       const buttons = ownVideoPreview && ownVideoPreview.parentElement.parentElement.parentElement
+      // If user has other grid view extensions installed, warn them
+      if (buttons && !buttons.__grid_ran2) {
+        buttons.__grid_ran2 = true
+
+        const performDuplicateCheck = document.currentScript && document.currentScript.src === 'chrome-extension://kklailfgofogmmdlhgmjgenehkjoioip/grid.user.js'
+        const hasDuplicates = Array.from(document.querySelectorAll('script'))
+          .map(s => s.src)
+          .filter(src =>
+            [
+              'chrome-extension://bjkegbgpfgpikgkfidhcihhiflbjgfic/js/gridview.js',
+              'chrome-extension://lipelfbeppnkhoaegfgceghpbamchmpn/assets/js/meet-grid.min.js',
+              'chrome-extension://joeanbdpecniicldgpbnobefjflfeedj/js/google-meet-grid-view/grid.user.js',
+              'chrome-extension://gdoepoildlikigihojgpedhakkfpjaac/js/google-meet-grid-view/grid.user.js',
+              'chrome-extension://pbnakhjodkkmiedpebpnlbdldeedhpej/js/google-meet-grid-view/grid.user.js',
+            ].includes(src),
+          )
+        if (performDuplicateCheck && hasDuplicates.length > 0) {
+          console.log('[google-meet-grid-view] Duplicates detected', hasDuplicates)
+          const duplicateWarning = document.createElement('div')
+          duplicateWarning.classList.add('__gmgv-duplicate-warning')
+          duplicateWarning.innerHTML = `<svg viewBox="0 0 24 24">${alert}</svg><span>${T('duplicateWarning')}</span>`
+          buttons.parentElement.prepend(duplicateWarning)
+        }
+      }
       if (buttons && !buttons.__grid_ran) {
         buttons.__grid_ran = true
         buttons.parentElement.parentElement.parentElement.style.zIndex = 10 // Prevent options getting cut off by pin/mute overlay or speaker overlay
@@ -765,7 +827,9 @@
                 }
 
                 // reflow(unknown, force)
-                m = /{if\(this\.([A-Za-z]+)!==[A-Za-z]+\|\|\(void 0===[A-Za-z]+\?0:[A-Za-z]+\)\)this\.([A-Za-z]+)=[A-Za-z]+,this\.([A-Za-z]+)\(_\.([A-Za-z]+)\)}/.exec(p.value.toString())
+                m = /{if\(this\.([A-Za-z]+)!==[A-Za-z]+\|\|\(void 0===[A-Za-z]+\?0:[A-Za-z]+\)\)this\.([A-Za-z]+)=[A-Za-z]+,this\.([A-Za-z]+)\(_\.([A-Za-z]+)\)}/.exec(
+                  p.value.toString(),
+                )
                 if (m) {
                   console.log('[google-meet-grid-view] Successfully hooked into reflow trigger', v.prototype[k])
                   const p = new Proxy(v.prototype[k], ReflowProxyHandler())
@@ -1073,6 +1137,11 @@
       }
       if (settings['include-own-video']) {
         addUniqueVideoElem(ret, ownVideo)
+        if (ownVideo.children && ownVideo.children.length) {
+          for (let child of ownVideo.children) {
+            addUniqueVideoElem(ret, child)
+          }
+        }
       }
 
       // If in only-video mode, remove any without video
@@ -1274,6 +1343,7 @@
             pinnedRows = Math.ceil((rows * ph) / ih)
             canFit = rows * cols >= pinnedRows * pinnedCols + n - 1
           }
+          rows--
         }
         const size = Math.min(w / cols, h / rows)
         sizes.push({
