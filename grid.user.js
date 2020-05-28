@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.33
+// @version      1.34
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -38,7 +38,7 @@
       ca: {
         showOnlyVideo: 'Mostra només els participants amb vídeo',
         highlightSpeaker: 'Ressalta els que parlen',
-        includeOwnVideo: 'Inclou el meu vídeo a la graella',
+        includeOwnVideo: 'Inclou el propi vídeo a la graella',
         autoEnable: 'Habilita la visualització en graella de manera predeterminada',
         notRunning: "La visualització en graella no s'està executant en aquesta pàgina",
         noMeeting: "La visualització en graella no s'executarà fins que no us uniu a una reunió",
@@ -52,11 +52,11 @@
         advancedSettingsLink: 'Mostra la configuració avançada',
         advancedSettingsTitle: 'Configuració avançada de Google Meet Grid View',
         bottomToolbarBehavior: "Comportament de la barra d'eines inferior",
-        btbNative: "Enfosqueix la graella quan es mostri la barra d'eines",
+        btbNative: "Tapa la graella quan es mostri la barra d'eines",
         btbResize: "Canvia la mida de la graella quan es mostri la barra d'eines",
         btbForce: "Mostra sempre la barra d'eines i canvia la mida de la graella",
         rightToolbarBehavior: 'Comportament del xat i el llistat de persones',
-        rtbNative: 'Enfosqueix la graella quan es mostri el xat',
+        rtbNative: 'Tapa la graella quan es mostri el xat',
         rtbResize: 'Canvia la mida de la graella quan es mostri el xat',
         ownVideoBehavior: 'Comportament del propi vídeo',
         ovbNative: "Mantén l'efecte mirall",
@@ -121,6 +121,10 @@
         ownVideoBehavior: 'Own Video In Grid Behavior',
         ovbNative: 'Keep video mirrored',
         ovbFlip: 'Flip video to match what others see',
+        presentationBehavior: 'Own Presentation Behavior',
+        pbNever: 'Never show presentation in grid',
+        pbOwnVideo: 'Show presentation in grid when "Include yourself in the grid" is selected',
+        pbAlways: 'Always show presentation in grid',
         modifyNames: 'Modify Participant Names',
         mnNative: 'No modification ("Alpha Bravo Charlie")',
         mnFirstSpace: 'Move first word to end ("Bravo Charlie, Alpha")',
@@ -637,6 +641,7 @@
       'bottom-toolbar': ['native', 'resize', 'force'].find(v => v === localStorage.getItem('gmgv-bottom-toolbar')) || 'resize',
       'right-toolbar': ['native', 'resize'].find(v => v === localStorage.getItem('gmgv-right-toolbar')) || 'resize',
       'own-video': ['native', 'flip'].find(v => v === localStorage.getItem('gmgv-own-video')) || 'native',
+      presentation: ['never', 'own-video', 'always'].find(v => v === localStorage.getItem('gmgv-presentation')) || 'never',
       names: ['native', 'first-space', 'last-space'].find(v => v === localStorage.getItem('gmgv-names')) || 'native',
     }
 
@@ -648,6 +653,7 @@
       (document.currentScript && document.currentScript.src.startsWith('moz-extension://')) || // Firefox regenerates the URL for each browser, so we can't detect if it's valid :(
       (typeof GM !== 'undefined' && GM && GM.info && GM.info.script && GM.info.script.namespace === 'https://fugi.tech/') || // user script
       (document.currentScript && document.currentScript.src.startsWith('blob:')) // recursive user script
+    const performDuplicateCheck = document.currentScript && document.currentScript.src === 'chrome-extension://kklailfgofogmmdlhgmjgenehkjoioip/grid.user.js'
     const version =
       (document.currentScript && document.currentScript.dataset.version) || (typeof GM !== 'undefined' && GM && GM.info && GM.info.script && GM.info.script.version) || '?.?.?'
     let firstRun = true
@@ -693,6 +699,14 @@
               </select>
             </label>
             <label>
+              <span>${T('presentationBehavior')}</span>
+              <select data-gmgv-setting="presentation">
+                <option value="never">${T('pbNever')}</option>
+                <option value="own-video">${T('pbOwnVideo')}</option>
+                <option value="always">${T('pbAlways')}</option>
+              </select>
+            </label>
+            <label>
               <span>${T('modifyNames')}</span>
               <select data-gmgv-setting="names">
                 <option value="native">${T('mnNative')}</option>
@@ -718,7 +732,6 @@
       if (buttons && !buttons.__grid_ran2) {
         buttons.__grid_ran2 = true
 
-        const performDuplicateCheck = document.currentScript && document.currentScript.src === 'chrome-extension://kklailfgofogmmdlhgmjgenehkjoioip/grid.user.js'
         const hasDuplicates = Array.from(document.querySelectorAll('script'))
           .map(s => s.src)
           .filter(src =>
@@ -728,6 +741,7 @@
               'chrome-extension://joeanbdpecniicldgpbnobefjflfeedj/js/google-meet-grid-view/grid.user.js',
               'chrome-extension://gdoepoildlikigihojgpedhakkfpjaac/js/google-meet-grid-view/grid.user.js',
               'chrome-extension://pbnakhjodkkmiedpebpnlbdldeedhpej/js/google-meet-grid-view/grid.user.js',
+              'chrome-extension://hjkmjeofhbkhmhpbdmmcbgjgihadjgnl/grid.user.js',
             ].includes(src),
           )
         if (performDuplicateCheck && hasDuplicates.length > 0) {
@@ -1137,6 +1151,8 @@
       }
       if (settings['include-own-video']) {
         addUniqueVideoElem(ret, ownVideo)
+      }
+      if (settings['presentation'] === 'always' || (settings['presentation'] === 'own-video' && settings['include-own-video'])) {
         if (ownVideo.children && ownVideo.children.length) {
           for (let child of ownVideo.children) {
             addUniqueVideoElem(ret, child)
