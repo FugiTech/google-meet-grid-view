@@ -6,13 +6,13 @@ Includes a variety of options to enhance your meeting: include your own video, h
 
 ## Official Releases
 
-Chrome Extension: https://chrome.google.com/webstore/detail/kklailfgofogmmdlhgmjgenehkjoioip
+[Chrome Extension](https://chrome.google.com/webstore/detail/kklailfgofogmmdlhgmjgenehkjoioip)
 
-Firefox Add-on: https://addons.mozilla.org/en-US/firefox/addon/google-meet-gridview
+[Firefox Add-on](https://addons.mozilla.org/en-US/firefox/addon/google-meet-gridview)
 
-Microsoft Edge Extension: https://microsoftedge.microsoft.com/addons/detail/ogbbehbkcmdciebilbkpjgopohnpfolj
+[Microsoft Edge Extension](https://microsoftedge.microsoft.com/addons/detail/ogbbehbkcmdciebilbkpjgopohnpfolj)
 
-Userscript: https://greasyfork.org/en/scripts/397862-google-meet-grid-view
+[Userscript](https://greasyfork.org/en/scripts/397862-google-meet-grid-view)
  - **Chrome and Firefox supported.** Every update is tested on both Chrome and Firefox before release.
  - **TamperMonkey, GreaseMonkey, and ViolentMonkey supported.** All these extensions have been tested and verified working on Chrome & Firefox.
  - Chromium browsers *may* work. They are not explicitly tested, but probably work. Please file an issue with your browser & userscript extension if you encounter issues.
