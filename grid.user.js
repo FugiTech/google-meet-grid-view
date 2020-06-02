@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.34
+// @version      1.35
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -61,6 +61,10 @@
         ownVideoBehavior: 'Comportament del propi vídeo',
         ovbNative: "Mantén l'efecte mirall",
         ovbFlip: 'Capgira el vídeo tal com et veuen els altres',
+        presentationBehavior: 'Comportament de la pròpia presentació',
+        pbNever: 'No mostris mai la presentació a la graella',
+        pbOwnVideo: 'Mostra la presentació a la graella quan s\'hagi seleccionat "Inclou el propi vídeo a la graella"',
+        pbAlways: 'Mostra sempre la presentació a la graella',
         modifyNames: 'Canvi dels noms dels participants',
         mnNative: 'Sense canvis ("Marta Vila Puig")',
         mnFirstSpace: 'Mou la primera paraula al final ("Vila Puig, Marta")',
@@ -398,7 +402,8 @@
 
       transition: opacity 300ms linear 500ms;
       opacity: 0;
-      z-index: -1;
+      z-index: 1;
+      pointer-events: none;
     }
     .__gmgv-vid-container > div > div:first-child {
       z-index: -2;
@@ -410,7 +415,6 @@
     .__gmgv-vid-container:not(.__gmgv-screen-capture-mode) > div.__gmgv-speaking:after {
       transition: opacity 60ms linear;
       opacity: 1;
-      z-index: 1;
     }
     .__gmgv-vid-container.__gmgv-flip-self video {
       transform: scaleX(1) !important;
@@ -1160,21 +1164,25 @@
         }
       }
 
+      // Set special values for later use
+      // ret[idx][magicKey].wr.Aa.Aa.Ca.Ea.Ws.Ea.state // mu (no) li (yes)
+      const tests = [/\.call\(this\)/, /\.call\(this,.*,"a"\)/, /new Set;this\.\w+=new _/, /new Map.*new Set/, /"un".*"li"/, /new Map/, /Object/]
+      ret.forEach(e => {
+        let values = [e[magicKey]]
+        for (let t of tests) {
+          let newValues = []
+          for (let v of values) {
+            newValues = newValues.concat(Object.values(v).filter(vv => vv && vv.constructor && t.test(vv.constructor.toString())))
+          }
+          values = newValues
+        }
+        e.__gmgvHasVideo = values.some(v => v && v.state && v.state === 'li')
+        e.__gmgvIsPresentation = values.some(v => v && v.content && v.content === 'sc')
+      })
+
       // If in only-video mode, remove any without video
       if (settings['show-only-video'] && !settings['screen-capture-mode']) {
-        // ret[idx][magicKey].wr.Aa.Aa.Ca.Ea.Ws.Ea.state // mu (no) li (yes)
-        const tests = [/\.call\(this\)/, /\.call\(this,.*,"a"\)/, /new Set;this\.\w+=new _/, /new Map.*new Set/, /"un".*"li"/, /new Map/, /Object/]
-        ret = ret.filter(e => {
-          let values = [e[magicKey]]
-          for (let t of tests) {
-            let newValues = []
-            for (let v of values) {
-              newValues = newValues.concat(Object.values(v).filter(vv => vv && vv.constructor && t.test(vv.constructor.toString())))
-            }
-            values = newValues
-          }
-          return values.some(v => v && v.state && v.state === 'li')
-        })
+        ret = ret.filter(e => e.__gmgvHasVideo)
       }
 
       // Remove all those explicitly hidden
@@ -1277,7 +1285,7 @@
       // Set Pinned Index for use in CSS loop. If there is no pin, use the presenter if available
       let pinnedIndex = ret.findIndex(v => v[magicKey].isPinned())
       if (pinnedIndex < 0) {
-        pinnedIndex = ret.findIndex(v => !!v[magicKey].parent)
+        pinnedIndex = ret.findIndex(v => v.__gmgvIsPresentation)
       }
 
       // Set video quality based on estimated video height
