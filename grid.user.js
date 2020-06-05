@@ -191,7 +191,7 @@
         noMeeting: 'Grid View non funziona se non sei connesso',
         enabled: 'Attiva Grid View',
         sourceCode: 'Il codice sorgente è disponibile su GitHub',
-        screenCaptureMode: 'Attiva la modalià registrazione della schermata',
+        screenCaptureMode: 'Attiva la modalità registrazione della schermata',
         screenCaptureModeDescription: 'Forza 16:9, Disattiva i nomi, Blocca i video nella posizione',
         unauthorizedWarning: 'ATTENZIONE: Questa estensione non è autorizzata. Installa la versione ufficiale cliccando qui.',
         hideParticipant: 'Nascondi partecipante',
