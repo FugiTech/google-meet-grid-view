@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.35
+// @version      1.36
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -183,35 +183,40 @@
         showParticipant: 'Tampilkan Peserta',
       },
       it: {
-        showOnlyVideo: 'Mostra solo i partecipanti con la fotocamera attiva',
-        highlightSpeaker: 'Illumina chi sta parlando',
+        showOnlyVideo: 'Mostra solo i partecipanti con videocamera',
+        highlightSpeaker: 'Evidenzia sta parlando',
         includeOwnVideo: 'Includi te stesso nella griglia',
-        autoEnable: 'Attiva sempre la griglia',
-        notRunning: 'Grid View non funziona in questa pagina',
-        noMeeting: 'Grid View non funziona se non sei connesso',
+        autoEnable: 'Attiva sempre la vista a griglia',
+        notRunning: 'Grid View non è in esecuzione su questa pagina',
+        noMeeting: 'Grid View non funzionerà finché non entrerai nella riunione',
         enabled: 'Attiva Grid View',
-        sourceCode: 'Il codice sorgente è disponibile su GitHub',
-        screenCaptureMode: 'Attiva la modalià registrazione della schermata',
-        screenCaptureModeDescription: 'Forza 16:9, Disattiva i nomi, Blocca i video nella posizione',
-        unauthorizedWarning: 'ATTENZIONE: Questa estensione non è autorizzata. Installa la versione ufficiale cliccando qui.',
+        sourceCode: 'Codice sorgente disponibile su GitHub',
+        screenCaptureMode: 'Attiva la modalità di cattura dello schermo',
+        screenCaptureModeDescription: 'Forza il 16:9, nasconde i nomi e blocca i video nella loro posizione attuale',
+        unauthorizedWarning: "ATTENZIONE: Questa è un'estenzione non autorizzata. Per favore, installa la versione ufficiale cliccando qui.",
+        duplicateWarning: 'Sono state rilevate diverse estenzioni Grid View. Per favore, rimuovi i duplicati.',
         hideParticipant: 'Nascondi partecipante',
         showParticipant: 'Mostra partecipante',
         advancedSettingsLink: 'Impostazioni avanzate',
         advancedSettingsTitle: 'Impostazioni avanzate di Google Meet Grid View',
-        bottomToolbarBehavior: 'Comportamento della barra in basso',
-        btbNative: 'Nascondi la griglia, mentre la barra è visibile',
-        btbResize: 'Ridimensiona la griglia, mentre la barra è visibile',
-        btbForce: 'Mostra sempre la barra e ridimensiona la griglia',
-        rightToolbarBehavior: 'Aspetto chat e persone',
-        rtbNative: 'Nascondi la griglia, quando è visibile la chat',
-        rtbResize: 'Ridimensiona la griglia, quando è visibile la chat',
-        ownVideoBehavior: 'Aspetto del proprio video nella griglia',
-        ovbNative: 'Mantieni il video riflesso',
-        ovbFlip: 'Mostra il video come lo vedono gli altri',
-        modifyNames: 'Modifica i nomi dei partecipanti',
-        mnNative: 'Nessuna modifica ("Alpha Bravo Charlie")',
-        mnFirstSpace: 'Sposta la prima parola alla fine ("Bravo Charlie, Alpha")',
-        mnLastSpace: 'Sposta l\'ultima parola all\'inizio ("Charlie, Alpha Bravo")',
+        bottomToolbarBehavior: 'Comportamento della barra inferiore',
+        btbNative: 'Copri la griglia mentre la barra è visibile',
+        btbResize: 'Ridimensiona la griglia mentre la barra è visibile',
+        btbForce: 'Mostra sempre la barra ridimensionando la griglia',
+        rightToolbarBehavior: 'Comportamento della chat',
+        rtbNative: 'Copri la griglia mentre la chat è visibile',
+        rtbResize: 'Ridimensiona la griglia mentre la chat è visibile',
+        ownVideoBehavior: 'Comportamento del proprio video nella griglia',
+        ovbNative: 'Tieni il video capovolto',
+        ovbFlip: 'Capovolgi il video per renderlo uguale a come viene visto dagli altri',
+        presentationBehavior: 'Comportamento della propria presentazione',
+        pbNever: 'Non mostrare mai la propria presentazione nella griglia',
+        pbOwnVideo: 'Mostra la presentazione quando "Includi te stesso nella griglia" è attivo',
+        pbAlways: 'Mostra sempre la propria presentazione nella griglia',
+        modifyNames: 'Modifica il nome dei partecipanti',
+        mnNative: 'Nessuna modifica ("Alfa Bravo Charlie")',
+        mnFirstSpace: 'Sposta la prima parola alla fine ("Bravo Charlie, Alfa")',
+        mnLastSpace: 'Sposta l\'ultima parola all\'inizio ("Charlie, Alfa Bravo")',
       },
       ja: {
         showOnlyVideo: 'カメラをオンにしている参加者のみ',
@@ -276,12 +281,35 @@
         includeOwnVideo: 'Incluir meu vídeo no grid',
         autoEnable: 'Habilitar visualização em grid por padrão',
         notRunning: 'Visualização em grid não está habilitado nesta página',
-        noMeeting: 'Visualização em grid não funciona até que vocie entre em uma conferência',
+        noMeeting: 'Visualização em grid não funciona até que você entre em uma conferência',
         enabled: 'Habilitar visualização em grid',
         sourceCode: 'Código fonte disponível no GitHub',
         screenCaptureMode: 'Habilitar captura de tela',
         screenCaptureModeDescription: 'Forçar aspecto 16:9, Desabilitar nomes, Travar posição dos vídeos',
         unauthorizedWarning: 'ATENÇÃO: Esta é uma extensão não autorizada. Por favor, instale a versão oficial clicando aqui.',
+        duplicateWarning: 'Detectadas várias extensões "Multiple Grid View". Desinstale as duplicatas.',
+        hideParticipant: 'Ocultar participante',
+        showParticipant: 'Mostrar participante',
+        advancedSettingsLink: 'Exibir configurações avançadas',
+        advancedSettingsTitle: 'Configurações avançadas do Google Meet Grid View',
+        bottomToolbarBehavior: 'Comportamento da barra de ferramentas inferior',
+        btbNative: 'Ocultar grid quando a barra de ferramentas está sendo exibida',
+        btbResize: 'Redimensionar o grid quando a barra de ferramentas estiver sendo exibida',
+        btbForce: 'Sempre mostrar a barra de ferramentas e redimensionar o grid',
+        rightToolbarBehavior: 'Bate-papo e comportamento das pessoas',
+        rtbNative: 'Ocultar grid quando o bate-papo está sendo exibido',
+        rtbResize: 'Redimensionar grid quando o bate-papo está sendo exibido',
+        ownVideoBehavior: 'Seu vídeo no grid',
+        ovbNative: 'Manter o vídeo espelhado',
+        ovbFlip: 'Girar vídeo para combinar com o que os outros veem',
+        presentationBehavior: 'Comportamento da própria apresentação',
+        pbNever: 'Nunca mostrar apresentação no grid',
+        pbOwnVideo: 'Mostrar apresentação no grid quando "Incluir-se na grade" está habilitado',
+        pbAlways: 'Sempre mostrar a apresentação no grid',
+        modifyNames: 'Modificar nomes de participantes',
+        mnNative: 'Nenhuma modificação ("Alpha Bravo Charlie")',
+        mnFirstSpace: 'Mover o primeiro nome para o final ("Bravo Charlie, Alpha")',
+        mnLastSpace: 'Mover o último nome para o início ("Charlie, Alpha Bravo")',
       },
       ru: {
         showOnlyVideo: 'Показывать участников только с видео',
@@ -934,11 +962,12 @@
         },
       }
     }
+    // When this inevitably fails again run the following: Object.values(default_MeetingsUi).filter(v => v && typeof v === 'function' && /this\.([A-Za-z]+)=[A-Za-z]+\(this\)/.test(v.toString()))
     function MeetingsUIProxyHandler() {
       return {
         set: function (obj, prop, value) {
           if (value && typeof value === 'function') {
-            const m = /\.([A-Za-z]+)\([a-zA-Z,.]+\{[^\x05]*?Infinity[^\x05]*?this\.([A-Za-z]+)=[A-Za-z]+\(this\)/.exec(value.toString())
+            const m = /\.([A-Za-z]+)\([a-zA-Z,.]+\{[^\x05]*?this\.([A-Za-z]+)=[A-Za-z]+\(this\)/.exec(value.toString())
             if (m) {
               console.log('[google-meet-grid-view] Successfully hooked into rendering pipeline v3', value)
               value = new Proxy(value, RefreshVideoProxyHandlerV3(m[2], m[1]))
