@@ -316,6 +316,12 @@
         mnNative: 'Nenhuma modificação ("Alpha Bravo Charlie")',
         mnFirstSpace: 'Mover o primeiro nome para o final ("Bravo Charlie, Alpha")',
         mnLastSpace: 'Mover o último nome para o início ("Charlie, Alpha Bravo")',
+        forceQuality: 'Qualidade do vídeo',
+        fqAuto: 'Automático com base no tamanho do vídeo e no número de participantes',
+        fqGood: 'Bom',
+        fqMediocre: 'Regular',
+        fqBad: 'Ruim',
+        fqWorst: 'Pior',
       },
       ru: {
         showOnlyVideo: 'Показывать участников только с видео',
