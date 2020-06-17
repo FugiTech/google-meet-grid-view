@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.35
+// @version      1.37
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -133,6 +133,12 @@
         mnNative: 'No modification ("Alpha Bravo Charlie")',
         mnFirstSpace: 'Move first word to end ("Bravo Charlie, Alpha")',
         mnLastSpace: 'Move last word to start ("Charlie, Alpha Bravo")',
+        forceQuality: 'Video Quality',
+        fqAuto: 'Automatic based on video size and number of participants',
+        fqGood: 'Good',
+        fqMediocre: 'Mediocre',
+        fqBad: 'Bad',
+        fqWorst: 'Worst',
       },
       es: {
         showOnlyVideo: 'Mostrar solo participantes con vídeo',
@@ -183,35 +189,40 @@
         showParticipant: 'Tampilkan Peserta',
       },
       it: {
-        showOnlyVideo: 'Mostra solo i partecipanti con la fotocamera attiva',
-        highlightSpeaker: 'Illumina chi sta parlando',
+        showOnlyVideo: 'Mostra solo i partecipanti con videocamera',
+        highlightSpeaker: 'Evidenzia sta parlando',
         includeOwnVideo: 'Includi te stesso nella griglia',
-        autoEnable: 'Attiva sempre la griglia',
-        notRunning: 'Grid View non funziona in questa pagina',
-        noMeeting: 'Grid View non funziona se non sei connesso',
+        autoEnable: 'Attiva sempre la vista a griglia',
+        notRunning: 'Grid View non è in esecuzione su questa pagina',
+        noMeeting: 'Grid View non funzionerà finché non entrerai nella riunione',
         enabled: 'Attiva Grid View',
-        sourceCode: 'Il codice sorgente è disponibile su GitHub',
-        screenCaptureMode: 'Attiva la modalià registrazione della schermata',
-        screenCaptureModeDescription: 'Forza 16:9, Disattiva i nomi, Blocca i video nella posizione',
-        unauthorizedWarning: 'ATTENZIONE: Questa estensione non è autorizzata. Installa la versione ufficiale cliccando qui.',
+        sourceCode: 'Codice sorgente disponibile su GitHub',
+        screenCaptureMode: 'Attiva la modalità di cattura dello schermo',
+        screenCaptureModeDescription: 'Forza il 16:9, nasconde i nomi e blocca i video nella loro posizione attuale',
+        unauthorizedWarning: "ATTENZIONE: Questa è un'estenzione non autorizzata. Per favore, installa la versione ufficiale cliccando qui.",
+        duplicateWarning: 'Sono state rilevate diverse estenzioni Grid View. Per favore, rimuovi i duplicati.',
         hideParticipant: 'Nascondi partecipante',
         showParticipant: 'Mostra partecipante',
         advancedSettingsLink: 'Impostazioni avanzate',
         advancedSettingsTitle: 'Impostazioni avanzate di Google Meet Grid View',
-        bottomToolbarBehavior: 'Comportamento della barra in basso',
-        btbNative: 'Nascondi la griglia, mentre la barra è visibile',
-        btbResize: 'Ridimensiona la griglia, mentre la barra è visibile',
-        btbForce: 'Mostra sempre la barra e ridimensiona la griglia',
-        rightToolbarBehavior: 'Aspetto chat e persone',
-        rtbNative: 'Nascondi la griglia, quando è visibile la chat',
-        rtbResize: 'Ridimensiona la griglia, quando è visibile la chat',
-        ownVideoBehavior: 'Aspetto del proprio video nella griglia',
-        ovbNative: 'Mantieni il video riflesso',
-        ovbFlip: 'Mostra il video come lo vedono gli altri',
-        modifyNames: 'Modifica i nomi dei partecipanti',
-        mnNative: 'Nessuna modifica ("Alpha Bravo Charlie")',
-        mnFirstSpace: 'Sposta la prima parola alla fine ("Bravo Charlie, Alpha")',
-        mnLastSpace: 'Sposta l\'ultima parola all\'inizio ("Charlie, Alpha Bravo")',
+        bottomToolbarBehavior: 'Comportamento della barra inferiore',
+        btbNative: 'Copri la griglia mentre la barra è visibile',
+        btbResize: 'Ridimensiona la griglia mentre la barra è visibile',
+        btbForce: 'Mostra sempre la barra ridimensionando la griglia',
+        rightToolbarBehavior: 'Comportamento della chat',
+        rtbNative: 'Copri la griglia mentre la chat è visibile',
+        rtbResize: 'Ridimensiona la griglia mentre la chat è visibile',
+        ownVideoBehavior: 'Comportamento del proprio video nella griglia',
+        ovbNative: 'Tieni il video capovolto',
+        ovbFlip: 'Capovolgi il video per renderlo uguale a come viene visto dagli altri',
+        presentationBehavior: 'Comportamento della propria presentazione',
+        pbNever: 'Non mostrare mai la propria presentazione nella griglia',
+        pbOwnVideo: 'Mostra la presentazione quando "Includi te stesso nella griglia" è attivo',
+        pbAlways: 'Mostra sempre la propria presentazione nella griglia',
+        modifyNames: 'Modifica il nome dei partecipanti',
+        mnNative: 'Nessuna modifica ("Alfa Bravo Charlie")',
+        mnFirstSpace: 'Sposta la prima parola alla fine ("Bravo Charlie, Alfa")',
+        mnLastSpace: 'Sposta l\'ultima parola all\'inizio ("Charlie, Alfa Bravo")',
       },
       ja: {
         showOnlyVideo: 'カメラをオンにしている参加者のみ',
@@ -657,6 +668,7 @@
     let screenCaptureModeLookup = new Map() // `${name}|${presentation}|${dedupeID}` -> {id,active,order}
     let hiddenIDs = new Set()
     let ownID = null
+    let sizingFuncOverwritten = false
     let settings = {
       enabled: false,
       'show-settings-overlay': false,
@@ -670,6 +682,7 @@
       'own-video': ['native', 'flip'].find(v => v === localStorage.getItem('gmgv-own-video')) || 'native',
       presentation: ['never', 'own-video', 'always'].find(v => v === localStorage.getItem('gmgv-presentation')) || 'never',
       names: ['native', 'first-space', 'last-space'].find(v => v === localStorage.getItem('gmgv-names')) || 'native',
+      'force-quality': ['auto', '2', '3', '4', '5'].find(v => v === localStorage.getItem('gmgv-force-quality')) || 'auto',
     }
 
     // Make the button to perform the toggle
@@ -739,6 +752,16 @@
                 <option value="native">${T('mnNative')}</option>
                 <option value="first-space">${T('mnFirstSpace')}</option>
                 <option value="last-space">${T('mnLastSpace')}</option>
+              </select>
+            </label>
+            <label>
+              <span>${T('forceQuality')}</span>
+              <select data-gmgv-setting="force-quality">
+                <option value="auto">${T('fqAuto')}</option>
+                <option value="2">${T('fqGood')}</option>
+                <option value="3">${T('fqMediocre')}</option>
+                <option value="4">${T('fqBad')}</option>
+                <option value="5">${T('fqWorst')}</option>
               </select>
             </label>
           </div>
@@ -867,10 +890,8 @@
                   v.prototype[k] = p
                 }
 
-                // reflow(unknown, force)
-                m = /{if\(this\.([A-Za-z]+)!==[A-Za-z]+\|\|\(void 0===[A-Za-z]+\?0:[A-Za-z]+\)\)this\.([A-Za-z]+)=[A-Za-z]+,this\.([A-Za-z]+)\(_\.([A-Za-z]+)\)}/.exec(
-                  p.value.toString(),
-                )
+                // reflow()
+                m = /=arguments;.*\(this\)/.exec(p.value.toString())
                 if (m) {
                   console.log('[google-meet-grid-view] Successfully hooked into reflow trigger', v.prototype[k])
                   const p = new Proxy(v.prototype[k], ReflowProxyHandler())
@@ -957,11 +978,12 @@
         },
       }
     }
+    // When this inevitably fails again run the following: Object.values(default_MeetingsUi).filter(v => v && typeof v === 'function' && /this\.([A-Za-z]+)=[A-Za-z]+\(this\)/.test(v.toString()))
     function MeetingsUIProxyHandler() {
       return {
         set: function (obj, prop, value) {
           if (value && typeof value === 'function') {
-            const m = /\.([A-Za-z]+)\([a-zA-Z,.]+\{[^\x05]*?Infinity[^\x05]*?this\.([A-Za-z]+)=[A-Za-z]+\(this\)/.exec(value.toString())
+            const m = /\.([A-Za-z]+)\([a-zA-Z,.]+\{[^\x05]*?this\.([A-Za-z]+)=[A-Za-z]+\(this\)/.exec(value.toString())
             if (m) {
               console.log('[google-meet-grid-view] Successfully hooked into rendering pipeline v3', value)
               value = new Proxy(value, RefreshVideoProxyHandlerV3(m[2], m[1]))
@@ -993,7 +1015,7 @@
             ret = ret.bind(target)
           }
 
-          if (settings['enabled'] && name == 'get') {
+          if (name == 'get') {
             return idx => ({
               [funcKey]: (videoOrdering, windowData) => {
                 // idx mapping:
@@ -1001,6 +1023,9 @@
                 // 3 = spotlight
                 // 4 = sidebar
                 // 5 = auto?
+                if (!settings['enabled']) {
+                  return ret(idx)[funcKey](videoOrdering, windowData)
+                }
                 try {
                   return GridLayout.call(parent, videoOrdering, windowData)
                 } catch (e) {
@@ -1086,8 +1111,8 @@
       return {
         apply: function (target, thisArg, argumentsList) {
           forceReflow = () => {
-            // reflow.call(this, unknown, force)
-            target.call(thisArg, true, true)
+            // reflow.call(this, undefined)
+            target.call(thisArg, argumentsList)
           }
           return target.apply(thisArg, argumentsList)
         },
@@ -1127,6 +1152,33 @@
     // Notably it forces every participant to load (or just those with video in only-video mode)
     // and consistently sorts by participant name (rather than who has talked last)
     function GridLayout(orderingInput) {
+      // If we try to run without overwriting Google Meet's video sizing code we'll accidentally cause an infinite loop
+      // So ensure we've overwritten it or error (and fall back to original layout) if we haven't
+      if (!sizingFuncOverwritten) {
+        const [sizeFuncName, sizeFunc] = Object.entries(window.default_MeetingsUi).find(([k, v]) => v && typeof v === 'function' && /bb_/.test(v.toString()))
+        const sizeConstructor = Object.values(window.default_MeetingsUi).find(v => v && typeof v === 'function' && /this\.left=a/.test(v.toString()))
+        if (!sizeFuncName || !sizeConstructor || !(sizeFuncName in window.default_MeetingsUi)) {
+          throw new Error('could not overwrite sizing function')
+        }
+
+        window.default_MeetingsUi[sizeFuncName] = new Proxy(sizeFunc, {
+          apply: function (target, thisArg, argumentsList) {
+            const [a, b, c, d, e] = argumentsList
+            if (settings['enabled'] || c > 16) {
+              const r = []
+              for (let i = 0; i < c; i++) {
+                r.push(new sizeConstructor(0, 0, b.width, b.height))
+              }
+              return r
+            }
+            return target.apply(thisArg, argumentsList)
+          },
+        })
+
+        sizingFuncOverwritten = true
+        console.log('[google-meet-grid-view] Successfully overwrote sizing function')
+      }
+
       // Extract constructors from the Meets code
       const VideoList = orderingInput.constructor
       const VideoElem = Object.values(window.default_MeetingsUi)
@@ -1311,10 +1363,22 @@
         pinnedIndex = ret.findIndex(v => v.__gmgvIsPresentation)
       }
 
-      // Set video quality based on estimated video height
-      // 0=highest 1=low 2=high
+      // Set video quality based on estimated video height & number of videos
+      // 0=best? 1=_ 2=good 3=ok 4=bad 5=worst
+      const numVideo = ret.filter(e => e.__gmgvHasVideo).length
       const size = calculateVideoSize(ret.length, pinnedIndex >= 0)
-      const setVideoQuality = magicSet(settings['screen-capture-mode'] ? 0 : size.height >= 200 ? 2 : 1)
+      let setVideoQuality = magicSet(5)
+      if (settings['screen-capture-mode']) {
+        setVideoQuality = magicSet(0)
+      } else if (settings['force-quality'] !== 'auto') {
+        setVideoQuality = magicSet(+settings['force-quality'])
+      } else if (size.height >= 300 && numVideo <= 9) {
+        setVideoQuality = magicSet(2)
+      } else if (size.height >= 200 && numVideo <= 16) {
+        setVideoQuality = magicSet(3)
+      } else if (size.height >= 100 && numVideo <= 25) {
+        setVideoQuality = magicSet(4)
+      }
       ret.forEach(setVideoQuality)
       if (pinnedIndex >= 0) magicSet(0)(ret[pinnedIndex])
 
