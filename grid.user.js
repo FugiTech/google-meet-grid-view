@@ -118,6 +118,12 @@
         mnNative: 'Keine Änderung ("Anton Berta Charlotte")',
         mnFirstSpace: 'Erstes Wort zuletzt ("Berta Charlotte, Anton")',
         mnLastSpace: 'Letztes Wort zuerst ("Charlotte, Anton Berta")',
+        forceQuality: 'Videoqualität',
+        fqAuto: 'Automatisch basierend auf Videogrösse und Teilnehmerzahl',
+        fqGood: 'Gut',
+        fqMediocre: 'Mittelmäßig',
+        fqBad: 'Schlecht',
+        fqWorst: 'Schlechteste',
       },
       en: {
         showOnlyVideo: 'Only show participants with video',
