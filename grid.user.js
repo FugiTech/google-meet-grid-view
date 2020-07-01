@@ -1358,7 +1358,7 @@
       ordering.sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
 
       // Set Pinned Index for use in CSS loop. If there is no pin, use the presenter if available
-      let pinnedIndex = ret.findIndex(v => v[magicKey].isPinned())
+      let pinnedIndex = ret.findIndex(v => v[magicKey].isPinned && v[magicKey].isPinned())
       if (pinnedIndex < 0) {
         pinnedIndex = ret.findIndex(v => v.__gmgvIsPresentation)
       }
