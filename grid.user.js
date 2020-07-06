@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.37
+// @version      1.38
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -1358,7 +1358,7 @@
       ordering.sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
 
       // Set Pinned Index for use in CSS loop. If there is no pin, use the presenter if available
-      let pinnedIndex = ret.findIndex(v => v[magicKey].isPinned())
+      let pinnedIndex = -1
       if (pinnedIndex < 0) {
         pinnedIndex = ret.findIndex(v => v.__gmgvIsPresentation)
       }
