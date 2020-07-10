@@ -1,10 +1,10 @@
 {
   "manifest_version": 2,
-  "name": "Google Meet Grid View",
+  "name": "Google Meet Grid View (fix)",
   "description": "Adds a toggle to use a grid layout in Google Meets",
-  "version": "1.37.0",
-  "author": "Chris Gamble",
-  "homepage_url": "https://github.com/Fugiman/google-meet-grid-view",
+  "version": "1.39.0",
+  "author": "Simone Marullo",
+  "homepage_url": "https://github.com/icysapphire/google-meet-grid-view",
   "icons": {
     "24": "icon24.png",
     "36": "icon36.png",

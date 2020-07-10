@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.38
+// @version      1.39
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -983,7 +983,7 @@
       return {
         set: function (obj, prop, value) {
           if (value && typeof value === 'function') {
-            const m = /\.([A-Za-z]+)\([a-zA-Z,.]+\{[^\x05]*?this\.([A-Za-z]+)=[A-Za-z]+\(this\)/.exec(value.toString())
+            const m = /\.([A-Za-z]+)\([a-zA-Z,.]+\{[^\x05]*?this\.([A-Za-z]+)=[A-Za-z0-9]+\(this\)/.exec(value.toString())
             if (m) {
               console.log('[google-meet-grid-view] Successfully hooked into rendering pipeline v3', value)
               value = new Proxy(value, RefreshVideoProxyHandlerV3(m[2], m[1]))
