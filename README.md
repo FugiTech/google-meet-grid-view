@@ -21,6 +21,9 @@ Userscript: https://greasyfork.org/en/scripts/397862-google-meet-grid-view
  - Chromium browsers *may* work. They are not explicitly tested, but probably work. Please file an issue with your browser & userscript extension if you encounter issues.
  - **Safari does NOT work!** Safari does not respect the Content-Security-Policy spec in regards to extensions, so Tampermonkey can not inject scripts into Google Meets ([citation](https://github.com/Tampermonkey/tampermonkey/issues/296#issuecomment-222356524)). There is nothing I can do about this, please do not try to use the script on Safari.
 
+## Donation: Support Grid View!
+The extension continues working due to continuous maintenance work (in order to keep up with changes from Google). If it is useful for your daily life and you're happy about it, consider making a small donation at paypal.me/SimoneMarullo 🙃
+
 ## Privacy Policy
 
 This extension does not track any user data.  
