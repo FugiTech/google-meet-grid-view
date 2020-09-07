@@ -4,7 +4,10 @@ This extension forcibly loads every participant's video when grid view is enable
 
 Includes a variety of options to enhance your meeting: include your own video, highlight who is speaking, and hide participants without video!
 
-## Official Releases
+## Unofficial Release
+Chrome Extension: https://chrome.google.com/webstore/detail/google-meet-grid-view-fix/dakebdbeofhmlnmjlmhjdmmjmfohiicn
+
+## Official Releases (Broken)
 
 Chrome Extension: https://chrome.google.com/webstore/detail/kklailfgofogmmdlhgmjgenehkjoioip
 
@@ -26,7 +29,7 @@ Your data can not be stored, as it does not exist.
 Your data can not be shared, as it does not exist.   
 Your data can not be sold, as it does not exist.  
 
-If this is insufficient please email fugiman47+grid-view-extension@gmail.com . Please note that I do not have a scanner and therefore can't sign physical documents.
+If this is insufficient please email webber975+grid-view-extension@gmail.com . Please note that I do not have a scanner and therefore can't sign physical documents.
 
 ## License
 
