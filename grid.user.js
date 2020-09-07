@@ -186,7 +186,7 @@
         mnFirstSpace: 'Mueve la primera palabra al final ("Villa Pérez, Marta")',
         mnLastSpace: 'Mueve la última palabra al principio ("Pérez, Marta Villa")',
         forceQuality: 'Calidad de video',
-        fqAuto: 'Automático según el tamaño del video y el número de participantes',
+        fqAuto: 'Automática según el tamaño del video y el número de participantes',
         fqGood: 'Buena',
         fqMediocre: 'Mediocre',
         fqBad: 'Mala',
