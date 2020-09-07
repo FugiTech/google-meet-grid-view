@@ -50,7 +50,7 @@
         screenCaptureMode: 'Activa el mode captura de pantalla',
         screenCaptureModeDescription: 'Força 16:9, desactiva els noms, bloqueja els vídeos al seu lloc',
         unauthorizedWarning: "ATENCIÓ: es tracta d'una extensió no autoritzada. Instal·leu l'extensió oficial fent clic aquí.",
-        duplicateWarning: 'Multiples extensiones Grid View detectadas. Si us plau, desinstal·leu els duplicats.',
+        duplicateWarning: 'Multiples extensions Grid View detectades. Si us plau, desinstal·leu els duplicats.',
         hideParticipant: 'Amaga el participant',
         showParticipant: 'Mostra el participant',
         advancedSettingsLink: 'Mostra la configuració avançada',
