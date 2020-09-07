@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.39
+// @version      1.39.1
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble
 // @include      https://meet.google.com/*
@@ -9,6 +9,9 @@
 // @run-at       document-idle
 // @inject-into  content
 // ==/UserScript==
+
+// v1.39    Summer 2020 bug fix by https://github.com/icysapphire
+// v1.39.1  Improved Spanish and Catalan localizations by https://github.com/buenoudg
 
 ;(function () {
   // If included by our extension's icon page, export translation factory
@@ -47,6 +50,7 @@
         screenCaptureMode: 'Activa el mode captura de pantalla',
         screenCaptureModeDescription: 'Força 16:9, desactiva els noms, bloqueja els vídeos al seu lloc',
         unauthorizedWarning: "ATENCIÓ: es tracta d'una extensió no autoritzada. Instal·leu l'extensió oficial fent clic aquí.",
+        duplicateWarning: 'Multiples extensiones Grid View detectadas. Si us plau, desinstal·leu els duplicats.',
         hideParticipant: 'Amaga el participant',
         showParticipant: 'Mostra el participant',
         advancedSettingsLink: 'Mostra la configuració avançada',
@@ -69,6 +73,12 @@
         mnNative: 'Sense canvis ("Marta Vila Puig")',
         mnFirstSpace: 'Mou la primera paraula al final ("Vila Puig, Marta")',
         mnLastSpace: 'Mou l\'última paraula al principi ("Puig, Marta Vila")',
+        forceQuality: 'Qualitat del vídeo',
+        fqAuto: 'Automàtica segons la mida del vídeo i el nombre de participants',
+        fqGood: 'Bona',
+        fqMediocre: 'Mediocre',
+        fqBad: 'Dolenta',
+        fqWorst: 'La pitjor'
       },
       da: {
         showOnlyVideo: 'Vis kun deltagere med video',
@@ -81,7 +91,7 @@
         sourceCode: 'Kildekoden er tilgængelig på GitHub',
         screenCaptureMode: 'Aktiver skærmoptager',
         screenCaptureModeDescription: 'Gennemtvinger 16:9, Deaktiverer navne, Låser video-positioner',
-        unauthorizedWarning: 'Advarsel: Dette er ikke en autoriseret tilføjelse. Installer venligst den officielle, ved at klikke her.',
+        unauthorizedWarning: 'Advarsel: Dette er ikke en autoriseret tilføjelse. Installer venligst den officielle, ved at klikke her.'
       },
       de: {
         showOnlyVideo: 'Nur Teilnehmer mit Video anzeigen',
@@ -96,7 +106,7 @@
         screenCaptureModeDescription: 'Erzwingt 16:9, entfernt Namen, fixiert Videoposition',
         unauthorizedWarning: 'WARNUNG: Dies ist keine autorisierte Erweiterung. Bitte installieren Sie die offizielle Version. Klicken Sie dafür hier.',
         hideParticipant: 'Teilnehmer verbergen',
-        showParticipant: 'Teilnehmer anzeigen',
+        showParticipant: 'Teilnehmer anzeigen'
       },
       en: {
         showOnlyVideo: 'Only show participants with video',
@@ -138,20 +148,49 @@
         fqGood: 'Good',
         fqMediocre: 'Mediocre',
         fqBad: 'Bad',
-        fqWorst: 'Worst',
+        fqWorst: 'Worst'
       },
       es: {
-        showOnlyVideo: 'Mostrar solo participantes con vídeo',
-        highlightSpeaker: 'Resaltar los que hablan',
-        includeOwnVideo: 'Incluir mi vídeo en la cuadrícula',
-        autoEnable: 'Habilitar vista en cuadrícula por defecto',
+        showOnlyVideo: 'Muestra solo participantes con vídeo',
+        highlightSpeaker: 'Resalta los que hablan',
+        includeOwnVideo: 'Incluye mi vídeo en la cuadrícula',
+        autoEnable: 'Habilita vista en cuadrícula por defecto',
         notRunning: 'La vista en cuadrícula no funciona en esta página',
         noMeeting: 'La vista en cuadrícula no funciona hasta que no estés en una llamada',
-        enabled: 'Habilitar vista en cuadrícula',
+        enabled: 'Habilita vista en cuadrícula',
         sourceCode: 'Código fuente disponible en GitHub',
-        screenCaptureMode: 'Habilitar modo captura de pantalla',
-        screenCaptureModeDescription: 'Forzar 16:9, deshabilita nombres, fija el vídeo en su lugar',
+        screenCaptureMode: 'Habilita modo captura de pantalla',
+        screenCaptureModeDescription: 'Fuerza 16:9, deshabilita nombres, fija el vídeo en su lugar',
         unauthorizedWarning: 'ATENCIÓN: Esta es una extensión no autorizada. Por favor, instale la versión oficial haciendo clic aquí.',
+        duplicateWarning: 'Multiples extensiones Grid View detectadas. Por favor, desinstale los duplicados.',
+        hideParticipant: 'Oculta el participante',
+        showParticipant: 'Muestra el participante',
+        advancedSettingsLink: 'Muestra la configuración avanzada',
+        advancedSettingsTitle: 'Configuración avanzada de Google Meet Grid View',
+        bottomToolbarBehavior: "Comportamiento de la barra de herramientas inferior",
+        btbNative: "Tapa la cuadrícula cuando se muestre la barra de herramientas",
+        btbResize: "Cambia el tamaño de la cuadrícula cuando se muestre la barra de herramientas",
+        btbForce: "Muestra siempre la barra de herramientas y cambia el tamaño de la cuadrícula",
+        rightToolbarBehavior: 'Comportamiento del chat y el listado de personas',
+        rtbNative: 'Tapa la cuadrícula cuando se muestre el chat',
+        rtbResize: 'Cambia el tamaño de la cuadrícula cuando se muestre el chat',
+        ownVideoBehavior: 'Comportamiento del propio vídeo',
+        ovbNative: "Mantén el efecto espejo",
+        ovbFlip: 'Muestra el vídeo tal y como te ven los demás',
+        presentationBehavior: 'Comportamiento de la propia presentación',
+        pbNever: 'No muestres nunca la presentación en la cuadrícula',
+        pbOwnVideo: 'Muestra la presentación en la cuadrícula cuando se haya seleccionado "Incluye mi vídeo en la cuadrícula"',
+        pbAlways: 'Muestra siempre la presentación en la cuadrícula',
+        modifyNames: 'Cambio de los nombres de los participantes',
+        mnNative: 'Sin cambios ("Marta Villa Pérez")',
+        mnFirstSpace: 'Mueve la primera palabra al final ("Villa Pérez, Marta")',
+        mnLastSpace: 'Mueve la última palabra al principio ("Pérez, Marta Villa")',
+        forceQuality: 'Calidad de video',
+        fqAuto: 'Automático según el tamaño del video y el número de participantes',
+        fqGood: 'Buena',
+        fqMediocre: 'Mediocre',
+        fqBad: 'Mala',
+        fqWorst: 'La peor'
       },
       fr: {
         showOnlyVideo: 'Ne montrer que les participants avec caméra',
@@ -166,12 +205,12 @@
         screenCaptureModeDescription: "Force l'affichage 16:9, désactive les noms, vérrouille les positions des vidéos",
         unauthorizedWarning: "ATTENTION : Il s'agit d'une extension non autorisée. Installez la version officielle en cliquant ici.",
         hideParticipant: 'Cacher le participant',
-        showParticipant: 'Afficher le participant',
+        showParticipant: 'Afficher le participant'
       },
       hr: {
         showOnlyVideo: 'Prikaži samo sudionike sa kamerom',
         highlightSpeaker: 'Naglasi govornike',
-        includeOwnVideo: 'Uključi sebe u mrežnom prikazu',
+        includeOwnVideo: 'Uključi sebe u mrežnom prikazu'
       },
       id: {
         showOnlyVideo: 'Hanya tampilkan peserta dengan video',
@@ -186,7 +225,7 @@
         screenCaptureModeDescription: 'Paksa 16:9, Nonaktifkan nama, kunci video pada tempatnya',
         unauthorizedWarning: 'PERINGATAN: Ini adalah ekstensi yang tidak resmi. Silakan pasang rilis resmi dengan mengklik di sini.',
         hideParticipant: 'Sembunyikan Peserta',
-        showParticipant: 'Tampilkan Peserta',
+        showParticipant: 'Tampilkan Peserta'
       },
       it: {
         showOnlyVideo: 'Mostra solo i partecipanti con videocamera',
@@ -222,7 +261,7 @@
         modifyNames: 'Modifica il nome dei partecipanti',
         mnNative: 'Nessuna modifica ("Alfa Bravo Charlie")',
         mnFirstSpace: 'Sposta la prima parola alla fine ("Bravo Charlie, Alfa")',
-        mnLastSpace: 'Sposta l\'ultima parola all\'inizio ("Charlie, Alfa Bravo")',
+        mnLastSpace: 'Sposta l\'ultima parola all\'inizio ("Charlie, Alfa Bravo")'
       },
       ja: {
         showOnlyVideo: 'カメラをオンにしている参加者のみ',
@@ -230,7 +269,7 @@
         includeOwnVideo: '自分を含める',
         autoEnable: '初期状態でグリッド表示を有効化',
         screenCaptureMode: '画面キャプチャモードを有効化',
-        screenCaptureModeDescription: '画面比率を16:9, 名前を非表示, ビデオの位置を固定にします。',
+        screenCaptureModeDescription: '画面比率を16:9, 名前を非表示, ビデオの位置を固定にします。'
       },
       nl: {
         showOnlyVideo: 'Toon alleen deelnemers met video',
@@ -261,12 +300,12 @@
         modifyNames: 'Deelnemersnamen aanpassen',
         mnNative: 'Niet aanpassen ("Jantje van de Berg")',
         mnFirstSpace: 'Eerste woord als laatste ("van de Berg, Jantje")',
-        mnLastSpace: 'Laatste woord als eerste ("Berg, Jantje van de")',
+        mnLastSpace: 'Laatste woord als eerste ("Berg, Jantje van de")'
       },
       pl: {
         showOnlyVideo: 'Pokaż tylko uczestników z wideo',
         highlightSpeaker: 'Wyróżnij osobę prezentującą',
-        includeOwnVideo: 'Uwzględnij siebie',
+        includeOwnVideo: 'Uwzględnij siebie'
       },
       pt: {
         showOnlyVideo: 'Mostrar apenas participantes com vídeo',
@@ -279,7 +318,7 @@
         sourceCode: 'Código fonte disponível no GitHub',
         screenCaptureMode: 'Ativar captura de ecrã',
         screenCaptureModeDescription: 'Forçar aspeto 16:9, Remover nomes, Parar posição dos vídeos',
-        unauthorizedWarning: 'ATENÇÃO: Esta é uma extensão não autorizada. Por favor, clique aqui para instalar a versão oficial.',
+        unauthorizedWarning: 'ATENÇÃO: Esta é uma extensão não autorizada. Por favor, clique aqui para instalar a versão oficial.'
       },
       'pt-BR': {
         showOnlyVideo: 'Mostrar somente participantes com vídeo',
@@ -315,7 +354,7 @@
         modifyNames: 'Modificar nomes de participantes',
         mnNative: 'Nenhuma modificação ("Alpha Bravo Charlie")',
         mnFirstSpace: 'Mover o primeiro nome para o final ("Bravo Charlie, Alpha")',
-        mnLastSpace: 'Mover o último nome para o início ("Charlie, Alpha Bravo")',
+        mnLastSpace: 'Mover o último nome para o início ("Charlie, Alpha Bravo")'
       },
       ru: {
         showOnlyVideo: 'Показывать участников только с видео',
@@ -328,7 +367,7 @@
         sourceCode: 'Исходный код доступен на GitHub',
         unauthorizedWarning: 'ВНИМАНИЕ: Это не авторизированное расширение. Пожалуйста, установите оффициальную версию тут.',
         hideParticipant: 'Скрыть участника',
-        showParticipant: 'Показать участника',
+        showParticipant: 'Показать участника'
       },
       sv: {
         showOnlyVideo: 'Visa endast deltagare med video',
@@ -341,23 +380,23 @@
         sourceCode: 'Källkod tillgänglig på GitHub',
         screenCaptureMode: 'Slå på skärminspelnings läge',
         screenCaptureModeDescription: 'Tvingar 16:9, Inaktiverar namn, Låser videor på plats',
-        unauthorizedWarning: 'VARNING: Detta är inte ett auktoriserat tillägg. Installera det officiella tillägget genom att klicka här.',
+        unauthorizedWarning: 'VARNING: Detta är inte ett auktoriserat tillägg. Installera det officiella tillägget genom att klicka här.'
       },
       uk: {
         showOnlyVideo: 'Показати лише учасників з відео',
         highlightSpeaker: 'Виділити ведучого',
-        includeOwnVideo: 'Включити себе',
+        includeOwnVideo: 'Включити себе'
       },
       zh: {
         showOnlyVideo: '仅显示有视讯的与会者',
         highlightSpeaker: '强调发言者',
-        includeOwnVideo: '将自己的视讯显示于网格中',
+        includeOwnVideo: '将自己的视讯显示于网格中'
       },
       'zh-TW': {
         showOnlyVideo: '僅顯示有視訊的與會者',
         highlightSpeaker: '強調發言者',
-        includeOwnVideo: '將自己的視訊顯示於網格中',
-      },
+        includeOwnVideo: '將自己的視訊顯示於網格中'
+      }
     }
 
     const T = key =>
