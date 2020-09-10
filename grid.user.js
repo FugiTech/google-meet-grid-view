@@ -3,7 +3,7 @@
 // @namespace    https://fugi.tech/
 // @version      1.40
 // @description  Adds a toggle to use a grid layout in Google Meets
-// @author       Chris Gamble (original author), Simone Marullo
+// @author       Chris Gamble (original author), Simone Marullo (mantainer)
 // @include      https://meet.google.com/*
 // @grant        none
 // @run-at       document-idle
@@ -470,26 +470,18 @@
     .__gmgv-button {
       display: flex;
       overflow: visible !important;
-      line-height:24px;
-      -webkit-box-align:center;
-      box-align:center;
-      align-items:center;
-      box-pack:center;
-      -webkit-box-pack:center;
-      justify-content:center;
-      height:100%;
-      min-width: 66px;
     }
     .__gmgv-button > svg {
       height: 24px;
       width: 24px;
+      padding: 1em 2em;
     }
     .__gmgv-button > div {
       box-sizing: border-box;
       display: none;
       position: absolute;
       top: 40px;
-      left: 0;
+      right: 0;
       width: 300px;
       padding: 12px;
       background: white;
