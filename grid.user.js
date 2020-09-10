@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.39
+// @version      1.40
 // @description  Adds a toggle to use a grid layout in Google Meets
-// @author       Chris Gamble
+// @author       Chris Gamble (original author), Simone Marullo
 // @include      https://meet.google.com/*
 // @grant        none
 // @run-at       document-idle
@@ -391,7 +391,6 @@
       display: grid;
       grid-auto-rows: 1fr;
       top: 50px !important;
-      right: 2px !important;
       left: 2px !important;
       bottom: 2px !important;
     }
@@ -471,6 +470,15 @@
     .__gmgv-button {
       display: flex;
       overflow: visible !important;
+      line-height:24px;
+      -webkit-box-align:center;
+      box-align:center;
+      align-items:center;
+      box-pack:center;
+      -webkit-box-pack:center;
+      justify-content:center;
+      height:100%;
+      min-width: 66px;
     }
     .__gmgv-button > svg {
       height: 24px;
@@ -833,14 +841,14 @@
             <hr>
             <div class="__gmgv-source-code">
               <small>v${version}</small>
-              <a href="https://github.com/Fugiman/google-meet-grid-view" target="_blank">${T('sourceCode')}</a>
+              <a href="https://github.com/icysapphire/google-meet-grid-view" target="_blank">Current release</a>
             </div>
             ${
               authorized
                 ? ''
                 : `
             <hr>
-            <a href="https://github.com/Fugiman/google-meet-grid-view#official-releases" target="_blank">${T('unauthorizedWarning')}</a>
+            <a href="https://github.com/Fugiman/google-meet-grid-view#official-releases" target="_blank">Original release here (discontinued)</a>
             `
             }
           </div>
