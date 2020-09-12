@@ -51,6 +51,8 @@
         screenCaptureModeDescription: 'Força 16:9, desactiva els noms, bloqueja els vídeos al seu lloc',
         unauthorizedWarning: "ATENCIÓ: es tracta d'una extensió no autoritzada. Instal·leu l'extensió oficial fent clic aquí.",
         duplicateWarning: 'Multiples extensions Grid View detectades. Si us plau, desinstal·leu els duplicats.',
+        currentRelease: 'Versió actual',
+        originalRelease: 'Versió original aquí (discontinuada)',
         hideParticipant: 'Amaga el participant',
         showParticipant: 'Mostra el participant',
         advancedSettingsLink: 'Mostra la configuració avançada',
@@ -121,6 +123,8 @@
         screenCaptureModeDescription: 'Forces 16:9, Disables names, Locks videos in place',
         unauthorizedWarning: 'WARNING: This is an unauthorized extension. Please install the official release by clicking here.',
         duplicateWarning: 'Multiple Grid View extensions detected. Please uninstall duplicates.',
+        currentRelease: 'Current release',
+        originalRelease: 'Original release here (discontinued)',
         hideParticipant: 'Hide Participant',
         showParticipant: 'Show Participant',
         advancedSettingsLink: 'View Advanced Settings',
@@ -163,6 +167,8 @@
         screenCaptureModeDescription: 'Fuerza 16:9, deshabilita nombres, fija el vídeo en su lugar',
         unauthorizedWarning: 'ATENCIÓN: Esta es una extensión no autorizada. Por favor, instale la versión oficial haciendo clic aquí.',
         duplicateWarning: 'Multiples extensiones Grid View detectadas. Por favor, desinstale los duplicados.',
+        currentRelease: 'Versión actual',
+        originalRelease: 'Versión original aquí (descontinuada)',
         hideParticipant: 'Oculta el participante',
         showParticipant: 'Muestra el participante',
         advancedSettingsLink: 'Muestra la configuración avanzada',
@@ -872,14 +878,14 @@
             <hr>
             <div class="__gmgv-source-code">
               <small>v${version}</small>
-              <a href="https://github.com/icysapphire/google-meet-grid-view" target="_blank">Current release</a>
+              <a href="https://github.com/icysapphire/google-meet-grid-view" target="_blank">${T('currentRelease')}</a>
             </div>
             ${
               authorized
                 ? ''
                 : `
             <hr>
-            <a href="https://github.com/Fugiman/google-meet-grid-view#official-releases" target="_blank">Original release here (discontinued)</a>
+            <a href="https://github.com/Fugiman/google-meet-grid-view#official-releases" target="_blank">${T('originalRelease')}</a>
             `
             }
           </div>
