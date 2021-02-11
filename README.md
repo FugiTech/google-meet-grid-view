@@ -1,3 +1,11 @@
+
+## UPDATE 02/11/2021:
+It turns out that Google is testing an update of Meet that disables the Grid View extension. This is why sometimes it works and sometimes not (you see the boxes in a vertical bar). If you seriously need Grid View right now, you might consider refreshing a few times the browser tab (you should end up loading the old compatible version at a certain point).
+
+I am really sorry but I have to temporarily remove the extension from Chrome Web Store. In fact, updating Grid View would require a huge amount of work or may not be feasible at all. Please, remember that Google Meet introduced native grid view (up to 49 tiles).
+
+===================
+
 This extension adds a button to the top right bar (next to chat & participant list) to enable grid-view in Google Meets. Grid view gives every participant an equal sized video for use in meetings without a primary speaker (such as working from home silent meetings).
 
 This extension forcibly loads every participant's video when grid view is enabled and may cause performance issues in extremely large meetings.
