@@ -4,6 +4,15 @@ It turns out that Google is testing an update of Meet that disables the Grid Vie
 
 I am really sorry but I have to temporarily remove the extension from Chrome Web Store. In fact, updating Grid View would require a huge amount of work or may not be feasible at all. Please, remember that Google Meet introduced native grid view (up to 49 tiles).
 
+### Offline installation
+[Here](https://github.com/icysapphire/google-meet-grid-view/releases/download/1.41/grid-view.zip) you can find a ZIP archive containing the extension. Please uncompress it, then:
+
+1. Navigate to "chrome://extensions/" in the url bar...
+2. Click "Developer mode" in the top right hand corner.
+3. Click "Load unpacked" and select the folder you have just unzipped
+
+It should work.
+
 ===================
 
 This extension adds a button to the top right bar (next to chat & participant list) to enable grid-view in Google Meets. Grid view gives every participant an equal sized video for use in meetings without a primary speaker (such as working from home silent meetings).
