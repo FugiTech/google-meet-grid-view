@@ -1,3 +1,10 @@
+## UPDATE 02/21/2021
+The extension has been published again with a workaround (thanks Kelly Gonzalez for the suggestion!).
+We temporarily fallback to a clean grid view layout, no advanced features at the moment..
+(set grid tiles slider to the maximum)
+
+We plan to work on some of the features that millions of users loved.. 
+stay tuned! / any contribution is welcome!
 
 ## UPDATE 02/11/2021:
 It turns out that Google is testing an update of Meet that disables the Grid View extension. This is why sometimes it works and sometimes not (you see the boxes in a vertical bar). If you seriously need Grid View right now, you might consider refreshing a few times the browser tab (you should end up loading the old compatible version at a certain point).

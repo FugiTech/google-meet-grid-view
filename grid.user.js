@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.40
+// @version      1.42
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble (original author), Simone Marullo (mantainer)
 // @include      https://meet.google.com/*
@@ -13,6 +13,8 @@
 // v1.39    Summer 2020 bug fix by https://github.com/icysapphire
 // v1.39.1  Improved Spanish and Catalan localizations by https://github.com/buenoudg
 // v1.40    Fixes
+// v1.41    Fix disappearing names
+// V1.42    CSS workaround for stacked tiles  
 ;(function () {
   // If included by our extension's icon page, export translation factory
   if (document.currentScript && document.currentScript.src === window.location.href.replace('popup.html', 'grid.user.js')) {
@@ -434,10 +436,16 @@
     s.innerHTML = `
     .__gmgv-vid-container {
       display: grid;
-      grid-auto-rows: 1fr;
+      grid-template-columns: repeat(auto-fit, minmax($bp,1fr));
+      grid-template-rows: repeat(auto-fit, minmax($bp,1fr));
+      gap: 0px 0px;
+      grid-template-areas:
+      ". . . ."
+      ". . . ."
+      ". . . .";
       top: 50px !important;
       left: 2px !important;
-      bottom: 2px !important;
+      bottom: 90px !important;
     }
     .__gmgv-vid-container.__gmgv-rtb-resize.__gmgv-chat-enabled {
       right: 325px !important;
@@ -643,6 +651,7 @@
       align-items: center;
       font-size: 16px;
       font-weight: 500;
+      opacity:0.3;
     }
     .__gmgv-settings > div > div > span:first-child {
       flex: 1 1 auto;
@@ -674,6 +683,7 @@
     .__gmgv-settings label {
       display: block;
       margin-top: 24px;
+      opacity:0.3;
     }
     .__gmgv-settings label > span {
       display: block;
@@ -700,6 +710,12 @@
       line-height: 20px;
       font-weight: 500;
     }
+    
+    /* Fix disappearing names */
+    .__gmgv-vid-container .sqgFe { 
+		opacity: 1 !important;
+		display: flex !important;
+	}
   `
     document.body.append(s)
 
@@ -757,6 +773,7 @@
         document.body.appendChild(settingsOverlay)
         settingsOverlay.innerHTML = `
           <div>
+            <span>Sorry, advanced features are temporarily broken. Some features may come back in the future.<br /></span>
             <div>
               <span>${T('advancedSettingsTitle')}</span>
               <span class="__gmgv-close"><svg viewBox="0 0 24 24">${close}</svg></span>
