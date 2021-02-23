@@ -127,7 +127,7 @@
         unauthorizedWarning: 'WARNING: This is an unauthorized extension. Please install the official release by clicking here.',
         duplicateWarning: 'Multiple Grid View extensions detected. Please uninstall duplicates.',
         currentRelease: 'Current release',
-        donate: 'Support this extension (make a small donation!)',
+        donate: 'Support this extension! <br /><small>(make a small donation)</small>',
         donateAdvancedSettings: 'Please, show your interest for Grid View by making a small donation <a href="https://paypal.me/SimoneMarullo" target="_blank">here</a>.',
         originalRelease: 'Original release here (discontinued)',
         hideParticipant: 'Hide Participant',
@@ -477,6 +477,9 @@
       height: 100% !important;
       width: 100% !important;
       background: 0 0 !important;
+    }
+    .__gmgv-vid-container div[__gmgv-tile-type="you-are-presenting"][__gmgv-hidden="yes"], .__gmgv-vid-container.__gmgv-only-video div[__gmgv-has-video="false"] {
+      display:none;
     }
     .__gmgv-vid-container > div[__gmgv-tile-type="user"]:after {
       content: "";
@@ -842,11 +845,11 @@
                 <option value="flip">${T('ovbFlip')}</option>
               </select>
             </label>
-            <label>
+            <label style='opacity:1.0'>
               <span>${T('presentationBehavior')}</span>
               <select data-gmgv-setting="presentation">
                 <option value="never">${T('pbNever')}</option>
-                <option value="own-video">${T('pbOwnVideo')}</option>
+                <!--<option value="own-video">${T('pbOwnVideo')}</option>-->
                 <option value="always">${T('pbAlways')}</option>
               </select>
             </label>
@@ -926,9 +929,9 @@
         toggleButton.innerHTML = `
           <svg viewBox="0 0 24 24">${gridOff}</svg>
           <div>
-            <label><input data-gmgv-setting="show-only-video" type="checkbox" /> ${T('showOnlyVideo')}</label>
-            <label><input data-gmgv-setting="highlight-speaker" type="checkbox" /> ${T('highlightSpeaker')}</label>
-            <label><input data-gmgv-setting="include-own-video" type="checkbox" /> ${T('includeOwnVideo')}</label>
+            <label style="display:none"><input data-gmgv-setting="show-only-video" type="checkbox" /> ${T('showOnlyVideo')}</label>
+            <label style="display:none"><input data-gmgv-setting="highlight-speaker" type="checkbox" /> ${T('highlightSpeaker')}</label>
+            <label style="display:none"><input data-gmgv-setting="include-own-video" type="checkbox" /> ${T('includeOwnVideo')}</label>
             <label><input data-gmgv-setting="auto-enable" type="checkbox" /> ${T('autoEnable')}</label>
             <hr>
             <label><input data-gmgv-setting="screen-capture-mode" type="checkbox" /> ${T('screenCaptureMode')}</label>
@@ -938,8 +941,10 @@
             <hr>
             <div class="__gmgv-source-code">
               <small>v${version}</small>
-              <a href="https://github.com/icysapphire/google-meet-grid-view" target="_blank">${T('currentRelease')}</a><br /><a href="https://paypal.me/SimoneMarullo" target="_blank">${T('donate')}</a>
+              <a href="https://github.com/icysapphire/google-meet-grid-view" target="_blank">${T('currentRelease')}</a>
             </div>
+            <hr>
+            <a href="https://paypal.me/SimoneMarullo" target="_blank">${T('donate')}</a>
             ${
               authorized
                 ? ''
@@ -1669,8 +1674,19 @@
     function checkTiles(){
         document.querySelectorAll('.__gmgv-vid-container > div').forEach(d => {
             console.log(d, d.childNodes.length)
-            if(d.childNodes.length == 2 && d.children[0].childNodes.length == 1) d.setAttribute('__gmgv-tile-type','you-are-presenting')
-            else d.setAttribute('__gmgv-tile-type','user')
+            if(d.childNodes.length == 2 && d.children[0].childNodes.length == 1) {
+                d.setAttribute('__gmgv-tile-type','you-are-presenting')
+                if(settings['presentation'] == 'never') {
+                  d.setAttribute('__gmgv-hidden','yes')
+                  //d.classList.toggle('__gmgv-hidden', true)
+                } else {
+                  d.setAttribute('__gmgv-hidden','no')
+                  //d.classList.toggle('__gmgv-hidden', false)
+                }
+            } else d.setAttribute('__gmgv-tile-type','user')
+
+            d.setAttribute('__gmgv-has-video', Array.from(d.querySelectorAll('video')).filter(s => window.getComputedStyle(s).getPropertyValue('display') != 'none').length > 0)
+
         })
     }
 
@@ -1766,6 +1782,7 @@
         container.classList.toggle('__gmgv-btb-force', settings['bottom-toolbar'] === 'force')
         container.classList.toggle('__gmgv-rtb-resize', settings['right-toolbar'] === 'resize')
         container.classList.toggle('__gmgv-flip-self', settings['own-video'] === 'flip')
+        container.classList.toggle('__gmgv-show-only-video', settings['show-only-video'])
         if (!settings['enabled']) {
           container.style.marginLeft = ''
           container.style.marginTop = ''
