@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://fugi.tech/
-// @version      1.42
+// @version      1.43
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Chris Gamble (original author), Simone Marullo (mantainer)
 // @include      https://meet.google.com/*
@@ -14,7 +14,8 @@
 // v1.39.1  Improved Spanish and Catalan localizations by https://github.com/buenoudg
 // v1.40    Fixes
 // v1.41    Fix disappearing names
-// V1.42    CSS workaround for stacked tiles  
+// v1.42    CSS workaround for stacked tiles
+// v1.43    Restored name modification
 ;(function () {
   // If included by our extension's icon page, export translation factory
   if (document.currentScript && document.currentScript.src === window.location.href.replace('popup.html', 'grid.user.js')) {
@@ -126,6 +127,8 @@
         unauthorizedWarning: 'WARNING: This is an unauthorized extension. Please install the official release by clicking here.',
         duplicateWarning: 'Multiple Grid View extensions detected. Please uninstall duplicates.',
         currentRelease: 'Current release',
+        donate: 'Support this extension (make a small donation!)',
+        donateAdvancedSettings: 'Please, show your interest for Grid View by making a small donation <a href="https://paypal.me/SimoneMarullo" target="_blank">here</a>.',
         originalRelease: 'Original release here (discontinued)',
         hideParticipant: 'Hide Participant',
         showParticipant: 'Show Participant',
@@ -475,7 +478,7 @@
       width: 100% !important;
       background: 0 0 !important;
     }
-    .__gmgv-vid-container > div:after {
+    .__gmgv-vid-container > div[__gmgv-tile-type="user"]:after {
       content: "";
       display: block;
       position: absolute;
@@ -491,13 +494,52 @@
       z-index: 1;
       pointer-events: none;
     }
+
+    .__gmgv-sidebar-transformed .__gmgv-speaking-icon{
+      display:none
+    }
+
+    .__gmgv-old-list{
+      display:block;
+    }
+    .__gmgv-new-list{
+      display:none;
+    }
+
+    .__gmgv-sidebar-transformed [role="list"]{
+      display:none;
+    }
+    .__gmgv-sidebar-transformed .__gmgv-old-list{
+      display:none
+    }
+
+    .__gmgv-sidebar-transformed .__gmgv-new-list{
+      display:block
+    }
+
     .__gmgv-vid-container > div > div:first-child {
       z-index: -2;
     }
-    .__gmgv-vid-container > div > div {
+    .__gmgv-vid-container > div[__gmgv-tile-type="user"] > div {
       display: flex !important;
       opacity: 1 !important;
     }
+
+    .__gmgv-vid-container > div[__gmgv-tile-type="you-are-presenting"] > div > div {
+      height: auto !important;
+      margin-top: -40px;
+      padding: 0px !important;
+      width: auto !important;
+    }
+    .__gmgv-vid-container > div[__gmgv-tile-type="you-are-presenting"]{
+     height:240px !important;
+     width: 210px !important;
+    }
+     .__gmgv-vid-container > div[__gmgv-tile-type="you-are-presenting"] > div {
+      width: min-content !important;
+      height: min-content !important;
+    }
+
     .__gmgv-vid-container:not(.__gmgv-screen-capture-mode) > div.__gmgv-speaking:after {
       transition: opacity 60ms linear;
       opacity: 1;
@@ -710,9 +752,9 @@
       line-height: 20px;
       font-weight: 500;
     }
-    
+
     /* Fix disappearing names */
-    .__gmgv-vid-container .sqgFe { 
+    .__gmgv-vid-container .sqgFe {
 		opacity: 1 !important;
 		display: flex !important;
 	}
@@ -808,11 +850,11 @@
                 <option value="always">${T('pbAlways')}</option>
               </select>
             </label>
-            <label>
+            <label style='opacity:1.0'>
               <span>${T('modifyNames')}</span>
               <select data-gmgv-setting="names">
                 <option value="native">${T('mnNative')}</option>
-                <option value="first-space">${T('mnFirstSpace')}</option>
+                <!--<option value="first-space">${T('mnFirstSpace')}</option>-->
                 <option value="last-space">${T('mnLastSpace')}</option>
               </select>
             </label>
@@ -826,6 +868,7 @@
                 <option value="5">${T('fqWorst')}</option>
               </select>
             </label>
+            <span>${T('donateAdvancedSettings')}<br></span>
           </div>
         `
         settingsOverlay.onclick = () => updateSetting('show-settings-overlay', false)
@@ -895,7 +938,7 @@
             <hr>
             <div class="__gmgv-source-code">
               <small>v${version}</small>
-              <a href="https://github.com/icysapphire/google-meet-grid-view" target="_blank">${T('currentRelease')}</a>
+              <a href="https://github.com/icysapphire/google-meet-grid-view" target="_blank">${T('currentRelease')}</a><br /><a href="https://paypal.me/SimoneMarullo" target="_blank">${T('donate')}</a>
             </div>
             ${
               authorized
@@ -1601,6 +1644,99 @@
       }
       el.insertBefore(b, el.lastChild)
     }
+    var observer;
+    var timerNames = -1;
+    var observerNames = -1;
+    function setObserverNames(participants_list){
+        var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
+            observerNames = new MutationObserver(function(mutations) {
+                updateNames(true);
+            });
+
+            observerNames.observe(participants_list, {
+                attributes: false,
+                childList: true,
+                characterData: false
+            });
+    }
+
+    function transformname(n){let p = n.split(' ')
+      p[p.length - 1] += ','
+      p.push(p.shift())
+      return p.join(' ')
+    }
+
+    function checkTiles(){
+        document.querySelectorAll('.__gmgv-vid-container > div').forEach(d => {
+            console.log(d, d.childNodes.length)
+            if(d.childNodes.length == 2 && d.children[0].childNodes.length == 1) d.setAttribute('__gmgv-tile-type','you-are-presenting')
+            else d.setAttribute('__gmgv-tile-type','user')
+        })
+    }
+
+    function updateNames(forceUpdate = false){
+        let original_listitems = document.querySelectorAll('[role="listitem"]')
+        document.querySelector('[role="list"]:not(.__gmgv-transformed)').parentNode.parentNode.classList.add('__gmgv-sidebar-transformed')
+        let transformedNames = false
+        original_listitems.forEach(d => {
+            let sp = d.children[0].querySelector('div:first-child > span:first-child');
+            d.children[1].children[0].classList.add('__gmgv-speaking-icon')
+            if(!d.hasAttribute('__gmgv-name') || d.getAttribute('__gmgv-name') != sp.innerText){
+                if(!d.classList.contains('__gmgv-transformed')) transformedNames = true
+                let oldname = sp.innerText
+                let newname = transformname(oldname)
+                sp.innerText= newname
+                sp.classList.toggle('__gmgv-transformed', true)
+                d.setAttribute('__gmgv-name', newname)
+                d.setAttribute('__gmgv-old-name', oldname)
+                d.setAttribute('__gmgv-transformed','yes')
+                d.classList.toggle('__gmgv-transformed', true)
+            }
+
+      })
+      if(forceUpdate || transformedNames){
+          document.querySelectorAll('.__gmgv-transformed[role="list"]').forEach(d => {d.remove();});
+          let oldlist = document.querySelector('[role="list"]:not(.__gmgv-transformed)')
+          oldlist.classList.toggle('__gmgv-old-list')
+          let newlist = document.createElement("div")
+          newlist.classList = oldlist.classList
+          newlist.classList.toggle('__gmgv-old-list', false)
+          newlist.classList.toggle('__gmgv-new-list', true)
+
+          newlist.innerHTML = '';
+          newlist.classList.toggle('__gmgv-transformed',true)
+          var categoryItems = oldlist.querySelectorAll('[role="listitem"]');
+          var categoryItemsArray = Array.from(categoryItems).map(d => d.cloneNode(true));
+
+          let sorted = categoryItemsArray.sort(sorter);
+
+          function sorter(a,b) {
+              return a.getAttribute('__gmgv-name').localeCompare(b.getAttribute('__gmgv-name'));
+          }
+
+          sorted.forEach(e => {e.classList.toggle('__gmgv-transformed',true); newlist.appendChild(e)});
+          oldlist.parentNode.insertBefore(newlist, oldlist.sibling);
+          oldlist.classList.add('.__gmgv-transformed')
+      }
+
+      if(observerNames==-1 && original_listitems.length > 0){
+            setObserverNames(document.querySelector('[role="list"]:not(.__gmgv-transformed)'));
+        }
+    }
+
+    function startUpdatingNames(){
+        if(timerNames==-1) timerNames = setInterval(updateNames, 3000);
+    }
+
+    function stopUpdatingNames(){
+        if(timerNames!=-1) clearInterval(timerNames);
+        if(observerNames!=-1) observerNames.disconnect();
+        observerNames = -1;
+        timerNames = -1;
+        let d = document.querySelector('.__gmgv-sidebar-transformed')
+        if(d != null)
+            d.toggle('__gmgv-sidebar-transformed', false)
+    }
 
     function updateSetting(name, value) {
       settings[name] = value
@@ -1633,6 +1769,24 @@
         if (!settings['enabled']) {
           container.style.marginLeft = ''
           container.style.marginTop = ''
+          stopUpdatingNames();
+        } else {
+            checkTiles();
+            if(settings['names'] == 'last-space') startUpdatingNames(); else {stopUpdatingNames();}
+            var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
+            var list = document.querySelector('.__gmgv-vid-container');
+
+            observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    checkTiles();
+                });
+            });
+
+            observer.observe(list, {
+                attributes: false,
+                childList: true,
+                characterData: false
+            });
         }
 
         const bottomBar = Array.from(container.parentElement.parentElement.children).find(el => el.clientHeight === 88)
