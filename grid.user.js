@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         Google Meet Grid View
-// @namespace    https://fugi.tech/
-// @version      1.43
+// @namespace    https://simonemarullo.github.io/
+// @version      1.44
 // @description  Adds a toggle to use a grid layout in Google Meets
-// @author       Chris Gamble (original author), Simone Marullo (mantainer)
+// @author       Simone Marullo
 // @include      https://meet.google.com/*
 // @grant        none
 // @run-at       document-idle
@@ -16,6 +16,7 @@
 // v1.41    Fix disappearing names
 // v1.42    CSS workaround for stacked tiles
 // v1.43    Restored name modification
+// v1.44    Restored 'show-only-video' option and pinning; implemented tile alphabetical sorting
 ;(function () {
   // If included by our extension's icon page, export translation factory
   if (document.currentScript && document.currentScript.src === window.location.href.replace('popup.html', 'grid.user.js')) {
@@ -437,10 +438,8 @@
     // Create the styles we need
     const s = document.createElement('style')
     s.innerHTML = `
-    .__gmgv-vid-container {
+    .__gmgv-vid-container:not(.__gmgv-single-tile) {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax($bp,1fr));
-      grid-template-rows: repeat(auto-fit, minmax($bp,1fr));
       gap: 0px 0px;
       grid-template-areas:
       ". . . ."
@@ -478,7 +477,7 @@
       width: 100% !important;
       background: 0 0 !important;
     }
-    .__gmgv-vid-container div[__gmgv-tile-type="you-are-presenting"][__gmgv-hidden="yes"], .__gmgv-vid-container.__gmgv-only-video div[__gmgv-has-video="false"] {
+    .__gmgv-vid-container div[__gmgv-tile-type="you-are-presenting"][__gmgv-hidden="yes"], .__gmgv-vid-container.__gmgv-show-only-video div[__gmgv-has-video="false"] {
       display:none;
     }
     .__gmgv-vid-container > div[__gmgv-tile-type="user"]:after {
@@ -818,7 +817,7 @@
         document.body.appendChild(settingsOverlay)
         settingsOverlay.innerHTML = `
           <div>
-            <span>Sorry, advanced features are temporarily broken. Some features may come back in the future.<br /></span>
+            <span style='color:brown'>Sorry, advanced features are temporarily broken. Some features may come back in the future.<br /><br /></span>
             <div>
               <span>${T('advancedSettingsTitle')}</span>
               <span class="__gmgv-close"><svg viewBox="0 0 24 24">${close}</svg></span>
@@ -861,7 +860,7 @@
                 <option value="last-space">${T('mnLastSpace')}</option>
               </select>
             </label>
-            <label>
+            <label style="display:none">
               <span>${T('forceQuality')}</span>
               <select data-gmgv-setting="force-quality">
                 <option value="auto">${T('fqAuto')}</option>
@@ -871,7 +870,7 @@
                 <option value="5">${T('fqWorst')}</option>
               </select>
             </label>
-            <span>${T('donateAdvancedSettings')}<br></span>
+            <span style="text-align: center;color: darkgreen;font-style: italic;font-size: 122%;"><br>${T('donateAdvancedSettings')}<br></span>
           </div>
         `
         settingsOverlay.onclick = () => updateSetting('show-settings-overlay', false)
@@ -929,7 +928,7 @@
         toggleButton.innerHTML = `
           <svg viewBox="0 0 24 24">${gridOff}</svg>
           <div>
-            <label style="display:none"><input data-gmgv-setting="show-only-video" type="checkbox" /> ${T('showOnlyVideo')}</label>
+            <label><input data-gmgv-setting="show-only-video" type="checkbox" /> ${T('showOnlyVideo')}</label>
             <label style="display:none"><input data-gmgv-setting="highlight-speaker" type="checkbox" /> ${T('highlightSpeaker')}</label>
             <label style="display:none"><input data-gmgv-setting="include-own-video" type="checkbox" /> ${T('includeOwnVideo')}</label>
             <label><input data-gmgv-setting="auto-enable" type="checkbox" /> ${T('autoEnable')}</label>
@@ -1672,9 +1671,9 @@
     }
 
     function checkTiles(){
-        document.querySelectorAll('.__gmgv-vid-container > div').forEach(d => {
-            console.log(d, d.childNodes.length)
-            if(d.childNodes.length == 2 && d.children[0].childNodes.length == 1) {
+        let tiles = document.querySelectorAll('.__gmgv-vid-container > div')
+        tiles.forEach(d => {
+            if(d.childNodes.length == 2 && d.children[0].childNodes.length == 1 && d.querySelector('video') != null) {
                 d.setAttribute('__gmgv-tile-type','you-are-presenting')
                 if(settings['presentation'] == 'never') {
                   d.setAttribute('__gmgv-hidden','yes')
@@ -1688,6 +1687,7 @@
             d.setAttribute('__gmgv-has-video', Array.from(d.querySelectorAll('video')).filter(s => window.getComputedStyle(s).getPropertyValue('display') != 'none').length > 0)
 
         })
+        container.classList.toggle('__gmgv-single-tile', tiles.length==1)
     }
 
     function updateNames(forceUpdate = false){
@@ -1730,7 +1730,17 @@
               return a.getAttribute('__gmgv-name').localeCompare(b.getAttribute('__gmgv-name'));
           }
 
-          sorted.forEach(e => {e.classList.toggle('__gmgv-transformed',true); newlist.appendChild(e)});
+          for (var i=0, n=sorted.length; i < n; ++i ) {
+              let e = sorted[i];
+              e.classList.toggle('__gmgv-transformed',true);
+              newlist.appendChild(e);
+              let tile = container.querySelector('div[data-initial-participant-id="'+e.getAttribute('data-participant-id')+'"]')
+              if(tile != null) {
+                  tile.style.order = i
+                  console.log(tile, i, tile.style.order)
+              }
+          }
+
           oldlist.parentNode.insertBefore(newlist, oldlist.sibling);
           oldlist.classList.add('.__gmgv-transformed')
       }
