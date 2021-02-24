@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://simonemarullo.github.io/
-// @version      1.44
+// @version      1.45
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Simone Marullo
 // @include      https://meet.google.com/*
@@ -17,6 +17,7 @@
 // v1.42    CSS workaround for stacked tiles
 // v1.43    Restored name modification
 // v1.44    Restored 'show-only-video' option and pinning; implemented tile alphabetical sorting
+// v1.45    Restored tile name transformation
 ;(function () {
   // If included by our extension's icon page, export translation factory
   if (document.currentScript && document.currentScript.src === window.location.href.replace('popup.html', 'grid.user.js')) {
@@ -441,6 +442,7 @@
     .__gmgv-vid-container:not(.__gmgv-single-tile) {
       display: grid;
       gap: 0px 0px;
+      grid-template-columns: repeat(auto-fit, minmax(15%, auto));
       grid-template-areas:
       ". . . ."
       ". . . ."
@@ -479,6 +481,14 @@
     }
     .__gmgv-vid-container div[__gmgv-tile-type="you-are-presenting"][__gmgv-hidden="yes"], .__gmgv-vid-container.__gmgv-show-only-video div[__gmgv-has-video="false"] {
       display:none;
+    }
+    .__gmgv-vid-container > div[__gmgv-tile-size="large"] {
+      grid-column: auto / span 2;
+      grid-row: auto / span 2;
+    }
+    .__gmgv-vid-container > div[__gmgv-tile-size="very-large"] {
+      grid-column: auto / span 3;
+      grid-row: auto / span 3;
     }
     .__gmgv-vid-container > div[__gmgv-tile-type="user"]:after {
       content: "";
@@ -548,6 +558,23 @@
     }
     .__gmgv-vid-container.__gmgv-flip-self video {
       transform: scaleX(1) !important;
+    }
+
+    .__gmgv-vid-container .__gmgv-alt-name-div{
+       color:#fff;
+       font-size:120%;
+       margin-left:8px;
+       overflow:hidden;
+       text-overflow:ellipsis;
+       text-shadow:0 0 2px rgba(0,0,0,0.80);
+       white-space:nowrap;
+       position: absolute;
+       bottom: 13px;
+       left: 44px;
+       z-index: 100;
+    }
+    .__gmgv-vid-container.__gmgv-single-tile .__gmgv-alt-name-div{
+       display:none
     }
 
     .__gmgv-duplicate-warning {
@@ -760,6 +787,13 @@
 		opacity: 1 !important;
 		display: flex !important;
 	}
+
+    .__gmgv-vid-container div[__gmgv-name-transformed="true"] .sqgFe div:last-child{
+       display:none;
+    }
+    .__gmgv-vid-container.__gmgv-single-tile div[__gmgv-name-transformed="true"] .sqgFe div:last-child{
+       display:block;
+    }
   `
     document.body.append(s)
 
@@ -1684,6 +1718,8 @@
                 }
             } else d.setAttribute('__gmgv-tile-type','user')
 
+            if(d.getAttribute('__gmgv-name-transformed') == null) d.querySelectorAll('.__gmgv-alt-name-div').forEach(d => {d.remove();})
+
             d.setAttribute('__gmgv-has-video', Array.from(d.querySelectorAll('video')).filter(s => window.getComputedStyle(s).getPropertyValue('display') != 'none').length > 0)
 
         })
@@ -1737,6 +1773,23 @@
               let tile = container.querySelector('div[data-initial-participant-id="'+e.getAttribute('data-participant-id')+'"]')
               if(tile != null) {
                   tile.style.order = i
+                  if(tile.children.length == 3) {
+                      tile.querySelectorAll('.__gmgv-alt-name-div').forEach(d => {d.remove();})
+                      let altnamediv = document.createElement("div")
+                      altnamediv.classList.add('__gmgv-alt-name-div')
+                      altnamediv.innerText = e.getAttribute('__gmgv-name')
+                      tile.children[0].appendChild(altnamediv)
+                      tile.setAttribute('__gmgv-name-transformed', true)
+
+                      let namebar = tile.children[1]
+                      if(namebar.children.length > 0) {
+                          let namecontainer = namebar.children[0]
+                          if(namecontainer.children.length > 0){
+                              let namediv = namecontainer.children[namecontainer.children.length-1]
+                              //namediv.innerText = e.getAttribute('__gmgv-name')
+                          }
+                      }
+                  }
                   console.log(tile, i, tile.style.order)
               }
           }
@@ -1799,7 +1852,10 @@
           stopUpdatingNames();
         } else {
             checkTiles();
-            if(settings['names'] == 'last-space') startUpdatingNames(); else {stopUpdatingNames();}
+            if(settings['names'] == 'last-space') startUpdatingNames(); else {
+                container.classList.toggle('__gmgv-name-transformed', false)
+                stopUpdatingNames();
+            }
             var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
             var list = document.querySelector('.__gmgv-vid-container');
 
