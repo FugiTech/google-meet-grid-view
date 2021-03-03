@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://simonemarullo.github.io/
-// @version      1.45
+// @version      1.46
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Simone Marullo
 // @include      https://meet.google.com/*
@@ -18,6 +18,8 @@
 // v1.43    Restored name modification
 // v1.44    Restored 'show-only-video' option and pinning; implemented tile alphabetical sorting
 // v1.45    Restored tile name transformation
+// v1.46    Restored own video mirroring + better tile layout
+// TODO: own presentation in grid, customization of presentation tiles size (2x, 3x with grid-columns CSS)
 ;(function () {
   // If included by our extension's icon page, export translation factory
   if (document.currentScript && document.currentScript.src === window.location.href.replace('popup.html', 'grid.user.js')) {
@@ -442,14 +444,29 @@
     .__gmgv-vid-container:not(.__gmgv-single-tile) {
       display: grid;
       gap: 0px 0px;
-      grid-template-columns: repeat(auto-fit, minmax(15%, auto));
+      grid-template-columns: repeat(auto-fit, minmax(30%, auto));
+      grid-template-areas:
+      ". . ."
+      ". . ."
+      ". . .";
+      grid-auto-rows: 1fr;
+      top: 50px !important;
+      left: 2px !important;
+      bottom: 90px !important;
+    }
+    .__gmgv-vid-container.__gmgv-9plus-tiles:not(.__gmgv-single-tile) {
       grid-template-areas:
       ". . . ."
       ". . . ."
       ". . . .";
-      top: 50px !important;
-      left: 2px !important;
-      bottom: 90px !important;
+      grid-template-columns: repeat(auto-fit, minmax(15%, auto));
+    }
+    .__gmgv-vid-container.__gmgv-30plus-tiles:not(.__gmgv-single-tile) {
+      grid-template-areas:
+      ". . . ."
+      ". . . ."
+      ". . . .";
+      grid-template-columns: repeat(auto-fit, minmax(12%, auto));
     }
     .__gmgv-vid-container.__gmgv-rtb-resize.__gmgv-chat-enabled {
       right: 325px !important;
@@ -556,7 +573,8 @@
       transition: opacity 60ms linear;
       opacity: 1;
     }
-    .__gmgv-vid-container.__gmgv-flip-self video {
+
+    .__gmgv-vid-container.__gmgv-flip-self > div[__gmgv-me-tile="true"] video {
       transform: scaleX(1) !important;
     }
 
@@ -851,7 +869,7 @@
         document.body.appendChild(settingsOverlay)
         settingsOverlay.innerHTML = `
           <div>
-            <span style='color:brown'>Sorry, advanced features are temporarily broken. Some features may come back in the future.<br /><br /></span>
+            <span style='color:brown'>Sorry, advanced features might be unavailable (under development).<br /><br /></span>
             <div>
               <span>${T('advancedSettingsTitle')}</span>
               <span class="__gmgv-close"><svg viewBox="0 0 24 24">${close}</svg></span>
@@ -871,7 +889,7 @@
                 <option value="resize">${T('rtbResize')}</option>
               </select>
             </label>
-            <label>
+            <label style='opacity:1.0'>
               <span>${T('ownVideoBehavior')}</span>
               <select data-gmgv-setting="own-video">
                 <option value="native">${T('ovbNative')}</option>
@@ -919,6 +937,9 @@
 
       const ownVideoPreview = document.querySelector('[data-fps-request-screencast-cap]')
       const buttons = ownVideoPreview && ownVideoPreview.parentElement.parentElement.parentElement
+
+      const presentation_container = buttons.childNodes[buttons.childNodes.length-2]
+        setObserverButtonBarPresentation(presentation_container)
       // If user has other grid view extensions installed, warn them
       if (buttons && !buttons.__grid_ran2) {
         buttons.__grid_ran2 = true
@@ -958,6 +979,7 @@
           updateSetting('enabled', !settings['enabled'])
         }
         buttons.prepend(toggleButton)
+
 
         toggleButton.innerHTML = `
           <svg viewBox="0 0 24 24">${gridOff}</svg>
@@ -1685,6 +1707,35 @@
     var observer;
     var timerNames = -1;
     var observerNames = -1;
+    var observerButtonBarPresentation = -1;
+
+
+    function updateOwnPresentation(mutations){
+        for(var mutation of mutations) {
+            if (mutation.type == 'childList' && mutation.addedNodes.length > 0) {
+                setTimeout(function() {
+                    let vid = mutation.target.querySelector('video')
+                    console.log(vid)
+                    if(vid != null) bringOwnPresentationToGrid(vid);
+                }, 5000)
+            }
+            if (mutation.type == 'childList' && mutation.removedNodes.length > 0){
+                document.querySelectorAll('div[__gmgv-tile-type="own-presentation"]').forEach(d => {d.remove();});
+            }
+
+        }
+    }
+
+    function bringOwnPresentationToGrid(video){
+        console.log('presentation video', video)
+        console.log('container', container)
+        return true;
+        let tile = document.createElement("div")
+        tile.setAttribute('__gmgv-tile-type', 'own-presentation')
+        container.appendChild(tile)
+        tile.appendChild(video)
+    }
+
     function setObserverNames(participants_list){
         var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
             observerNames = new MutationObserver(function(mutations) {
@@ -1698,16 +1749,40 @@
             });
     }
 
+    function setObserverButtonBarPresentation(presentation_container){
+        if (typeof presentation_container == 'undefined' || observerButtonBarPresentation != -1) {
+            return;
+        }
+
+        var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
+            observerButtonBarPresentation = new MutationObserver(function(mutations) {
+               updateOwnPresentation(mutations);
+            });
+
+            observerButtonBarPresentation.observe(presentation_container, {
+                attributes: false,
+                childList: true,
+                characterData: false
+            });
+    }
+
     function transformname(n){let p = n.split(' ')
       p[p.length - 1] += ','
       p.push(p.shift())
       return p.join(' ')
     }
 
+
+
     function checkTiles(){
         let tiles = document.querySelectorAll('.__gmgv-vid-container > div')
+        container.classList.toggle('__gmgv-9plus-tiles', false)
+        container.classList.toggle('__gmgv-30plus-tiles', false)
+        if(tiles.length > 30) container.classList.toggle('__gmgv-30plus-tiles', true)
+        else if(tiles.length > 9) container.classList.toggle('__gmgv-9plus-tiles', true)
+
         tiles.forEach(d => {
-            if(d.childNodes.length == 2 && d.children[0].childNodes.length == 1 && d.querySelector('video') != null) {
+            if(d.childNodes.length == 2 && d.children[0].childNodes.length == 1 && d.querySelector('video') == null) {
                 d.setAttribute('__gmgv-tile-type','you-are-presenting')
                 if(settings['presentation'] == 'never') {
                   d.setAttribute('__gmgv-hidden','yes')
@@ -1739,6 +1814,7 @@
                 let newname = transformname(oldname)
                 sp.innerText= newname
                 sp.classList.toggle('__gmgv-transformed', true)
+                if(sp.nextSibling != null) d.setAttribute('__gmgv-me-listitem', true)
                 d.setAttribute('__gmgv-name', newname)
                 d.setAttribute('__gmgv-old-name', oldname)
                 d.setAttribute('__gmgv-transformed','yes')
@@ -1780,6 +1856,7 @@
                       altnamediv.innerText = e.getAttribute('__gmgv-name')
                       tile.children[0].appendChild(altnamediv)
                       tile.setAttribute('__gmgv-name-transformed', true)
+                      if(e.getAttribute('__gmgv-me-listitem') == 'true') tile.setAttribute('__gmgv-me-tile', true)
 
                       let namebar = tile.children[1]
                       if(namebar.children.length > 0) {
@@ -1790,7 +1867,7 @@
                           }
                       }
                   }
-                  console.log(tile, i, tile.style.order)
+
               }
           }
 
@@ -1940,3 +2017,4 @@
     })
   }
 })()
+
