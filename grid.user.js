@@ -19,8 +19,7 @@
 // v1.44    Restored 'show-only-video' option and pinning; implemented tile alphabetical sorting
 // v1.45    Restored tile name transformation
 // v1.46    Restored own video mirroring + better tile layout
-// v1.47    Show own presentation in grid
-// TODO: customization of presentation tiles size (2x, 3x with grid-columns CSS)
+// v1.47    Show own presentation in grid, customization of presentation tiles size (2x, 3x with grid-columns CSS)
 ;(function () {
   // If included by our extension's icon page, export translation factory
   if (document.currentScript && document.currentScript.src === window.location.href.replace('popup.html', 'grid.user.js')) {
@@ -149,6 +148,10 @@
         ownVideoBehavior: 'Own Video In Grid Behavior',
         ovbNative: 'Keep video mirrored',
         ovbFlip: 'Flip video to match what others see',
+        presentationSize: 'Size of presentation tiles',
+        psNormal: 'Normal (1x)',
+        psLarger: 'Large (2x)',
+        psMuchLarger: 'Very large (3x)',
         presentationBehavior: 'Own Presentation Behavior',
         youArePresentingBehavior: "'You are presenting' box Behavior",
         yapNever: 'Hide',
@@ -503,15 +506,7 @@
     .__gmgv-vid-container div[__gmgv-tile-type="you-are-presenting"][__gmgv-hidden="yes"], .__gmgv-vid-container.__gmgv-show-only-video div[__gmgv-has-video="false"] {
       display:none;
     }
-    .__gmgv-vid-container > div[__gmgv-tile-size="large"] {
-      grid-column: auto / span 2;
-      grid-row: auto / span 2;
-    }
-    .__gmgv-vid-container > div[__gmgv-tile-size="very-large"] {
-      grid-column: auto / span 3;
-      grid-row: auto / span 3;
-    }
-    .__gmgv-vid-container > div[__gmgv-tile-type="user"]:after, .__gmgv-vid-container > div[__gmgv-tile-type="own-presentation"]:after {
+    .__gmgv-vid-container > div[__gmgv-tile-type="user"]:after, .__gmgv-vid-container > div[__gmgv-tile-type="own-presentation"]:after, .__gmgv-vid-container > div[__gmgv-tile-type="other-presentation"]:after {
       content: "";
       display: block;
       position: absolute;
@@ -553,7 +548,7 @@
     .__gmgv-vid-container > div > div:first-child {
       z-index: -2;
     }
-    .__gmgv-vid-container > div[__gmgv-tile-type="user"] > div, .__gmgv-vid-container > div[__gmgv-tile-type="own-presentation"] > div {
+    .__gmgv-vid-container > div[__gmgv-tile-type="user"] > div, .__gmgv-vid-container > div[__gmgv-tile-type="own-presentation"] > div, .__gmgv-vid-container > div[__gmgv-tile-type="other-presentation"] > div {
       display: flex !important;
       opacity: 1 !important;
     }
@@ -819,6 +814,21 @@
     .__gmgv-vid-container.__gmgv-single-tile div[__gmgv-added="true"]{
        display:none;
     }
+    .__gmgv-vid-container.__gmgv-presentation-1x div[__gmgv-tile-type="own-presentation"], .__gmgv-vid-container.__gmgv-presentation-1x div[__gmgv-tile-type="other-presentation"]{
+       grid-row: span 1;
+       grid-column: span 1;
+       order: -1 !important;
+    }
+    .__gmgv-vid-container.__gmgv-presentation-2x div[__gmgv-tile-type="own-presentation"], .__gmgv-vid-container.__gmgv-presentation-2x div[__gmgv-tile-type="other-presentation"]{
+       grid-row: span 2;
+       grid-column: span 2;
+       order: -1 !important;
+    }
+    .__gmgv-vid-container.__gmgv-presentation-3x div[__gmgv-tile-type="own-presentation"], .__gmgv-vid-container.__gmgv-presentation-3x div[__gmgv-tile-type="other-presentation"]{
+       grid-row: span 3;
+       grid-column: span 3;
+       order: -1 !important;
+    }
   `
     document.body.append(s)
 
@@ -845,6 +855,7 @@
       'bottom-toolbar': ['native', 'resize', 'force'].find(v => v === localStorage.getItem('gmgv-bottom-toolbar')) || 'resize',
       'right-toolbar': ['native', 'resize'].find(v => v === localStorage.getItem('gmgv-right-toolbar')) || 'resize',
       'own-video': ['native', 'flip'].find(v => v === localStorage.getItem('gmgv-own-video')) || 'native',
+      'presentation-size': ['1x','2x','3x'].find(v => v === localStorage.getItem('gmgv-presentation-size')) || '1x',
       presentation: ['never', 'own-video', 'always'].find(v => v === localStorage.getItem('gmgv-presentation')) || 'never',
       names: ['native', 'first-space', 'last-space'].find(v => v === localStorage.getItem('gmgv-names')) || 'native',
       'force-quality': ['auto', '2', '3', '4', '5'].find(v => v === localStorage.getItem('gmgv-force-quality')) || 'auto',
@@ -913,6 +924,14 @@
               </select>
             </label>
             <label style='opacity:1.0'>
+              <span>${T('presentationSize')}</span>
+              <select data-gmgv-setting="presentation-size">
+                <option value="1x">${T('psNormal')}</option>
+                <option value="2x">${T('psLarger')}</option>
+                <option value="3x">${T('psMuchLarger')}</option>
+              </select>
+            </label>
+            <label style='opacity:1.0'>
               <span>${T('youArePresentingBehavior')}</span>
               <select data-gmgv-setting="you-are-presenting-box">
                 <option value="never">${T('yapNever')}</option>
@@ -954,7 +973,7 @@
       const buttons = ownVideoPreview && ownVideoPreview.parentElement.parentElement.parentElement
 
       const presentation_container = buttons.childNodes[buttons.childNodes.length-2]
-        setObserverButtonBarPresentation(presentation_container)
+      if(settings['enabled']) setObserverButtonBarPresentation(presentation_container)
       // If user has other grid view extensions installed, warn them
       if (buttons && !buttons.__grid_ran2) {
         buttons.__grid_ran2 = true
@@ -1727,7 +1746,7 @@
 
 
     function updateOwnPresentation(mutations){
-        if(settings['presentation'] === 'always'){
+        if(settings['enabled'] && settings['presentation'] === 'always'){
             for(var mutation of mutations) {
                 if (mutation.type == 'childList' && mutation.addedNodes.length > 0) {
                     setTimeout(function() {
@@ -1804,6 +1823,9 @@
         tiles.forEach(d => {
             if(d.hasAttribute('__gmgv-tile-type')  && d.getAttribute('__gmgv-tile-type') == 'own-presentation'){
 
+            } else if(d.childNodes.length == 2 && d.querySelector('video') != null) {
+                // Other presentation
+                d.setAttribute('__gmgv-tile-type','other-presentation')
             } else if(d.childNodes.length == 2 && d.children[0].childNodes.length == 1 && d.querySelector('video') == null) {
                 d.setAttribute('__gmgv-tile-type','you-are-presenting')
                 if(settings['you-are-presenting-box'] == 'never') {
@@ -1965,7 +1987,13 @@
           container.style.marginTop = ''
           stopUpdatingNames();
           stopCheckingTiles();
+          container.classList.toggle('__gmgv-presentation-1x', false)
+          container.classList.toggle('__gmgv-presentation-2x', false)
+          container.classList.toggle('__gmgv-presentation-3x', false)
         } else {
+            container.classList.toggle('__gmgv-presentation-1x', settings['presentation-size'] == '1x')
+            container.classList.toggle('__gmgv-presentation-2x', settings['presentation-size'] == '2x')
+            container.classList.toggle('__gmgv-presentation-3x', settings['presentation-size'] == '3x')
             if(settings['presentation'] === 'never') document.querySelectorAll('div[__gmgv-tile-type="own-presentation"]').forEach(d => {d.remove();});
             checkTiles();
             startCheckingTiles();
