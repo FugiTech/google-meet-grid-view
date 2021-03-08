@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://simonemarullo.github.io/
-// @version      1.46
+// @version      1.47
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Simone Marullo
 // @include      https://meet.google.com/*
@@ -19,7 +19,9 @@
 // v1.44    Restored 'show-only-video' option and pinning; implemented tile alphabetical sorting
 // v1.45    Restored tile name transformation
 // v1.46    Restored own video mirroring + better tile layout
+// v1.47    Show own presentation in grid
 // TODO: own presentation in grid, customization of presentation tiles size (2x, 3x with grid-columns CSS)
+// FIXME: pinning other tiles when presenting
 ;(function () {
   // If included by our extension's icon page, export translation factory
   if (document.currentScript && document.currentScript.src === window.location.href.replace('popup.html', 'grid.user.js')) {
@@ -149,6 +151,9 @@
         ovbNative: 'Keep video mirrored',
         ovbFlip: 'Flip video to match what others see',
         presentationBehavior: 'Own Presentation Behavior',
+        youArePresentingBehavior: "'You are presenting' box Behavior",
+        yapNever: 'Hide',
+        yapAlways: 'Show',
         pbNever: 'Never show presentation in grid',
         pbOwnVideo: 'Show presentation in grid when "Include yourself in the grid" is selected',
         pbAlways: 'Always show presentation in grid',
@@ -507,7 +512,7 @@
       grid-column: auto / span 3;
       grid-row: auto / span 3;
     }
-    .__gmgv-vid-container > div[__gmgv-tile-type="user"]:after {
+    .__gmgv-vid-container > div[__gmgv-tile-type="user"]:after, .__gmgv-vid-container > div[__gmgv-tile-type="own-presentation"]:after {
       content: "";
       display: block;
       position: absolute;
@@ -549,7 +554,7 @@
     .__gmgv-vid-container > div > div:first-child {
       z-index: -2;
     }
-    .__gmgv-vid-container > div[__gmgv-tile-type="user"] > div {
+    .__gmgv-vid-container > div[__gmgv-tile-type="user"] > div, .__gmgv-vid-container > div[__gmgv-tile-type="own-presentation"] > div {
       display: flex !important;
       opacity: 1 !important;
     }
@@ -832,6 +837,7 @@
       'show-only-video': localStorage.getItem('gmgv-show-only-video') === 'true',
       'highlight-speaker': localStorage.getItem('gmgv-highlight-speaker') === 'true',
       'include-own-video': localStorage.getItem('gmgv-include-own-video') === 'true',
+      'you-are-presenting-box': ['never', 'always'].find(v => v === localStorage.getItem('gmgv-you-are-presenting-box')) || 'never',
       'auto-enable': localStorage.getItem('gmgv-auto-enable') === 'true',
       'screen-capture-mode': localStorage.getItem('gmgv-screen-capture-mode') === 'true',
       'bottom-toolbar': ['native', 'resize', 'force'].find(v => v === localStorage.getItem('gmgv-bottom-toolbar')) || 'resize',
@@ -902,6 +908,13 @@
                 <option value="never">${T('pbNever')}</option>
                 <!--<option value="own-video">${T('pbOwnVideo')}</option>-->
                 <option value="always">${T('pbAlways')}</option>
+              </select>
+            </label>
+            <label style='opacity:1.0'>
+              <span>${T('youArePresentingBehavior')}</span>
+              <select data-gmgv-setting="you-are-presenting-box">
+                <option value="never">${T('yapNever')}</option>
+                <option value="always">${T('yapAlways')}</option>
               </select>
             </label>
             <label style='opacity:1.0'>
@@ -1706,34 +1719,39 @@
     }
     var observer;
     var timerNames = -1;
+    var timerTiles = -1;
     var observerNames = -1;
     var observerButtonBarPresentation = -1;
 
 
     function updateOwnPresentation(mutations){
-        for(var mutation of mutations) {
-            if (mutation.type == 'childList' && mutation.addedNodes.length > 0) {
-                setTimeout(function() {
-                    let vid = mutation.target.querySelector('video')
-                    console.log(vid)
-                    if(vid != null) bringOwnPresentationToGrid(vid);
-                }, 5000)
-            }
-            if (mutation.type == 'childList' && mutation.removedNodes.length > 0){
-                document.querySelectorAll('div[__gmgv-tile-type="own-presentation"]').forEach(d => {d.remove();});
-            }
+        if(settings['presentation'] === 'always'){
+            for(var mutation of mutations) {
+                if (mutation.type == 'childList' && mutation.addedNodes.length > 0) {
+                    setTimeout(function() {
+                        let vid = mutation.target.querySelector('video')
+                        //console.log("vid", vid)
+                        if(vid != null) bringOwnPresentationToGrid(vid);
+                    }, 6000)
+                }
+                if (mutation.type == 'childList' && mutation.removedNodes.length > 0){
+                    document.querySelectorAll('div[__gmgv-tile-type="own-presentation"]').forEach(d => {d.remove();});
+                }
 
+            }
         }
     }
 
     function bringOwnPresentationToGrid(video){
         console.log('presentation video', video)
         console.log('container', container)
-        return true;
-        let tile = document.createElement("div")
-        tile.setAttribute('__gmgv-tile-type', 'own-presentation')
-        container.appendChild(tile)
-        tile.appendChild(video)
+        if(settings['presentation'] === 'always'){
+            let tile = document.createElement("div")
+            tile.setAttribute('__gmgv-tile-type', 'own-presentation')
+            tile.setAttribute('__gmgv-added', 'true')
+            container.appendChild(tile)
+            tile.appendChild(video)
+        }
     }
 
     function setObserverNames(participants_list){
@@ -1782,23 +1800,31 @@
         else if(tiles.length > 9) container.classList.toggle('__gmgv-9plus-tiles', true)
 
         tiles.forEach(d => {
-            if(d.childNodes.length == 2 && d.children[0].childNodes.length == 1 && d.querySelector('video') == null) {
+            if(d.hasAttribute('__gmgv-tile-type')  && d.getAttribute('__gmgv-tile-type') == 'own-presentation'){
+
+            } else if(d.childNodes.length == 2 && d.children[0].childNodes.length == 1 && d.querySelector('video') == null) {
                 d.setAttribute('__gmgv-tile-type','you-are-presenting')
-                if(settings['presentation'] == 'never') {
+                if(settings['you-are-presenting-box'] == 'never') {
                   d.setAttribute('__gmgv-hidden','yes')
                   //d.classList.toggle('__gmgv-hidden', true)
                 } else {
                   d.setAttribute('__gmgv-hidden','no')
                   //d.classList.toggle('__gmgv-hidden', false)
                 }
-            } else d.setAttribute('__gmgv-tile-type','user')
+            } else {
+                d.setAttribute('__gmgv-tile-type','user')
+            }
 
             if(d.getAttribute('__gmgv-name-transformed') == null) d.querySelectorAll('.__gmgv-alt-name-div').forEach(d => {d.remove();})
 
             d.setAttribute('__gmgv-has-video', Array.from(d.querySelectorAll('video')).filter(s => window.getComputedStyle(s).getPropertyValue('display') != 'none').length > 0)
 
         })
-        container.classList.toggle('__gmgv-single-tile', tiles.length==1)
+        if(Array.from(document.querySelectorAll('.__gmgv-vid-container > div')).filter(function (e) {return !(e.hasAttribute('__gmgv-hidden') && e.getAttribute('__gmgv-hidden') == 'yes')}).length==1){
+            container.classList.toggle('__gmgv-single-tile', true)
+        } else {
+            container.classList.toggle('__gmgv-single-tile', false)
+        }
     }
 
     function updateNames(forceUpdate = false){
@@ -1884,6 +1910,14 @@
         if(timerNames==-1) timerNames = setInterval(updateNames, 3000);
     }
 
+    function startCheckingTiles(){
+        if(timerTiles==-1) timerTiles = setInterval(checkTiles, 3000);
+    }
+
+    function stopCheckingTiles(){
+        if(timerTiles!=-1) clearInterval(timerTiles);
+    }
+
     function stopUpdatingNames(){
         if(timerNames!=-1) clearInterval(timerNames);
         if(observerNames!=-1) observerNames.disconnect();
@@ -1923,12 +1957,16 @@
         container.classList.toggle('__gmgv-rtb-resize', settings['right-toolbar'] === 'resize')
         container.classList.toggle('__gmgv-flip-self', settings['own-video'] === 'flip')
         container.classList.toggle('__gmgv-show-only-video', settings['show-only-video'])
+
         if (!settings['enabled']) {
           container.style.marginLeft = ''
           container.style.marginTop = ''
           stopUpdatingNames();
+          stopCheckingTiles();
         } else {
+            if(settings['presentation'] === 'never') document.querySelectorAll('div[__gmgv-tile-type="own-presentation"]').forEach(d => {d.remove();});
             checkTiles();
+            startCheckingTiles();
             if(settings['names'] == 'last-space') startUpdatingNames(); else {
                 container.classList.toggle('__gmgv-name-transformed', false)
                 stopUpdatingNames();
@@ -1938,8 +1976,9 @@
 
             observer = new MutationObserver(function(mutations) {
                 mutations.forEach(function(mutation) {
-                    checkTiles();
+                    
                 });
+                checkTiles();
             });
 
             observer.observe(list, {
