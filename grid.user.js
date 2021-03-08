@@ -20,8 +20,7 @@
 // v1.45    Restored tile name transformation
 // v1.46    Restored own video mirroring + better tile layout
 // v1.47    Show own presentation in grid
-// TODO: own presentation in grid, customization of presentation tiles size (2x, 3x with grid-columns CSS)
-// FIXME: pinning other tiles when presenting
+// TODO: customization of presentation tiles size (2x, 3x with grid-columns CSS)
 ;(function () {
   // If included by our extension's icon page, export translation factory
   if (document.currentScript && document.currentScript.src === window.location.href.replace('popup.html', 'grid.user.js')) {
@@ -816,6 +815,9 @@
     }
     .__gmgv-vid-container.__gmgv-single-tile div[__gmgv-name-transformed="true"] .sqgFe div:last-child{
        display:block;
+    }
+    .__gmgv-vid-container.__gmgv-single-tile div[__gmgv-added="true"]{
+       display:none;
     }
   `
     document.body.append(s)
@@ -1820,7 +1822,7 @@
             d.setAttribute('__gmgv-has-video', Array.from(d.querySelectorAll('video')).filter(s => window.getComputedStyle(s).getPropertyValue('display') != 'none').length > 0)
 
         })
-        if(Array.from(document.querySelectorAll('.__gmgv-vid-container > div')).filter(function (e) {return !(e.hasAttribute('__gmgv-hidden') && e.getAttribute('__gmgv-hidden') == 'yes')}).length==1){
+        if(Array.from(document.querySelectorAll('.__gmgv-vid-container > div')).filter(function (e) {return !((e.hasAttribute('__gmgv-hidden') && e.getAttribute('__gmgv-hidden') == 'yes') || e.hasAttribute('__gmgv-added'))}).length==1){
             container.classList.toggle('__gmgv-single-tile', true)
         } else {
             container.classList.toggle('__gmgv-single-tile', false)
@@ -1976,7 +1978,7 @@
 
             observer = new MutationObserver(function(mutations) {
                 mutations.forEach(function(mutation) {
-                    
+
                 });
                 checkTiles();
             });
