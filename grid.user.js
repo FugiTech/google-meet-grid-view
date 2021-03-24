@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Meet Grid View
 // @namespace    https://simonemarullo.github.io/
-// @version      1.47
+// @version      1.49
 // @description  Adds a toggle to use a grid layout in Google Meets
 // @author       Simone Marullo
 // @include      https://meet.google.com/*
@@ -740,7 +740,6 @@
       align-items: center;
       font-size: 16px;
       font-weight: 500;
-      opacity:0.3;
     }
     .__gmgv-settings > div > div > span:first-child {
       flex: 1 1 auto;
@@ -772,7 +771,6 @@
     .__gmgv-settings label {
       display: block;
       margin-top: 24px;
-      opacity:0.3;
     }
     .__gmgv-settings label > span {
       display: block;
@@ -889,12 +887,12 @@
         document.body.appendChild(settingsOverlay)
         settingsOverlay.innerHTML = `
           <div>
-            <span style='color:brown'>Sorry, advanced features might be unavailable (under development).<br /><br /></span>
+            <span style='color:brown'>Sorry, advanced features may not work as expected (under development).<br /><br /></span>
             <div>
               <span>${T('advancedSettingsTitle')}</span>
               <span class="__gmgv-close"><svg viewBox="0 0 24 24">${close}</svg></span>
             </div>
-            <label>
+            <label style="display:none">
               <span>${T('bottomToolbarBehavior')}</span>
               <select data-gmgv-setting="bottom-toolbar">
                 <option value="native">${T('btbNative')}</option>
@@ -902,7 +900,7 @@
                 <option value="force">${T('btbForce')}</option>
               </select>
             </label>
-            <label>
+            <label style="display:none">
               <span>${T('rightToolbarBehavior')}</span>
               <select data-gmgv-setting="right-toolbar">
                 <option value="native">${T('rtbNative')}</option>
@@ -1991,6 +1989,7 @@
           container.classList.toggle('__gmgv-presentation-1x', false)
           container.classList.toggle('__gmgv-presentation-2x', false)
           container.classList.toggle('__gmgv-presentation-3x', false)
+          document.querySelectorAll('div[__gmgv-added="true"]').forEach(d => {d.remove();});
         } else {
             container.classList.toggle('__gmgv-presentation-1x', settings['presentation-size'] == '1x')
             container.classList.toggle('__gmgv-presentation-2x', settings['presentation-size'] == '2x')

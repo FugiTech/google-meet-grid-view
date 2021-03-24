@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Google Meet Grid View (fix)",
   "description": "Adds a toggle to use a grid layout in Google Meets and more advanced features",
-  "version": "1.48.0",
+  "version": "1.50.0",
   "author": "Simone Marullo",
   "homepage_url": "https://github.com/icysapphire/google-meet-grid-view",
   "icons": {
@@ -20,10 +20,16 @@
     "default_popup": "popup.html",
     "default_title": "Google Meet Grid View"
   },
+  "background": {
+    "service_worker": "update_worker.js"
+  },
+  "permissions": [
+    "storage", "tabs", "alarms"
+  ],
   "content_scripts": [
     {
       "matches": ["https://meet.google.com/*"],
-      "js": ["browser-polyfill.js", "content.js"],
+      "js": ["browser-polyfill.js", "content.js", "mutesync.js"],
       "run_at": "document_idle"
     }
   ],
