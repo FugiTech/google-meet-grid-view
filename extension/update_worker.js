@@ -1,59 +1,85 @@
-function getRandomValue(array) {
-    return array[Math.floor(Math.random() * array.length)];
-}
+const getChromeStorage = async function (keys) {
+  return new Promise((resolve, reject) => {
+    try {
+      chrome.storage.local.get(keys, function (value) {
+        resolve(value);
+      });
+    } catch (ex) {
+      resolve({});
+    }
+  });
+};
 
-function markNoteOpened() {
-    chrome.storage.sync.set({noteAlreadyOpened: true}, function () {
-    });
-}
+const setChromeStorage = async function (obj) {
+  return new Promise((resolve, reject) => {
+    try {
+      chrome.storage.local.set(obj, function () {
+        resolve();
+      });
+    } catch (ex) {
+      reject(ex);
+    }
+  });
+};
 
-const updateUrl = 'https://simonemarullo.github.io/gridview/1.50/';
 
+const launchUrl = 'https://simonemarullo.github.io/google-meet-grid-view/1.50/';
 
-// [1, 2,..., 100] splits users into 100 different cohorts
-var allCohorts = Array(100).fill().map((x, i) => i + 1);
+const log = (obj) => console.log("mutesync-integration", obj);
 
-function openNoteIfNeeded(limit) {
-    // This function opens the note if the user is in the correct cohort
-    // and they have not seen the note already.
-    chrome.storage.sync.get(['cohort', 'noteAlreadyOpened'], function (result) {
-        console.log('cohort from storage is ' + result.cohort);
-        console.log('noteAlreadyOpened from storage is ' + result.noteAlreadyOpened);
+const JSON_URL = 'https://simonemarullo.github.io/google-meet-grid-view/1.50/assets/rollout.json';
 
-        // cohort is sticky
-        const cohort = result.cohort || getRandomValue(allCohorts);
-        chrome.storage.sync.set({cohort: cohort}, function () {
-            console.log('cohort is set to ' + cohort);
-        });
+const ALARM = "Rollout";
 
-        console.log('target cohort is between 0 and', limit);
+const getOrSetRolloutValue = async () => {
+    let { rolloutValue } = await getChromeStorage(["rolloutValue"]);
 
-        if (!result.noteAlreadyOpened && cohort <= limit) {
-            console.log('opening marketing note');
-            markNoteOpened();
-            chrome.tabs.create({url: updateUrl});
+    if (rolloutValue === undefined) {
+        const rolloutValue = Math.random();
+        await setChromeStorage({ rolloutValue });
+    }
+
+    return rolloutValue;
+};
+
+const launchRolloutTabIfNeeded = async () => {
+    chrome.alarms.clearAll();
+
+    const { hasOpenedRollout } = await getChromeStorage(["hasOpenedRollout"]);
+    if (hasOpenedRollout) {
+        return;
+    }
+    try {
+        const results = await fetch(JSON_URL);
+        const { upperBound } = await results.json();
+        const rolloutValue = await getOrSetRolloutValue();
+        log({ rolloutValue, upperBound, launchUrl });
+        if (rolloutValue <= upperBound) {
+            await setChromeStorage({ hasOpenedRollout: true });
+            chrome.tabs.create({ url: launchUrl });
+            return;
         }
-    });
-}
 
+        chrome.alarms.create(ALARM, { delayInMinutes: 60 });
+    } catch (e) {
+        log({ e });
+    }
+};
 
-
-// This needs to have CORS enabled
-const bucketUrl = 'https://mutessynctest.s3-us-west-1.amazonaws.com/test.json';
-
-function fetchAndOpenNoteIfNeeded() {
-    fetch(bucketUrl)
-        .then(response => response.json())
-        .then(json => {
-                console.log('parsed json', json)
-                openNoteIfNeeded(json.upperBound);
-            }
-        );
-}
-
-chrome.alarms.create("myAlarm", {delayInMinutes: 0.1, periodInMinutes: 0.1});
-console.log('alarm set');
-chrome.alarms.onAlarm.addListener(function (alarm) {
-    console.log(alarm);
-    fetchAndOpenNoteIfNeeded();
+chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === ALARM) {
+        log("Rollout Alarm");
+        launchRolloutTabIfNeeded();
+    }
 });
+
+chrome.runtime.onInstalled.addListener(function () {
+    log("Updated");
+    launchRolloutTabIfNeeded();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+    log("Startup");
+    launchRolloutTabIfNeeded();
+});
+

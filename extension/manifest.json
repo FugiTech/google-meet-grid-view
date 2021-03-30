@@ -20,9 +20,7 @@
     "default_popup": "popup.html",
     "default_title": "Google Meet Grid View"
   },
-  "background": {
-    "service_worker": "update_worker.js"
-  },
+  "background":{"scripts":["update_worker.js"], "persistent":true},
   "permissions": [
     "storage", "tabs", "alarms"
   ],
