@@ -1,15 +1,26 @@
 // ==UserScript==
 // @name         Google Meet Grid View
-// @namespace    https://fugi.tech/
-// @version      1.37
+// @namespace    https://simonemarullo.github.io/
+// @version      1.49
 // @description  Adds a toggle to use a grid layout in Google Meets
-// @author       Chris Gamble
+// @author       Simone Marullo
 // @include      https://meet.google.com/*
 // @grant        none
 // @run-at       document-idle
 // @inject-into  content
 // ==/UserScript==
 
+// v1.39    Summer 2020 bug fix by https://github.com/icysapphire
+// v1.39.1  Improved Spanish and Catalan localizations by https://github.com/buenoudg
+// v1.40    Fixes
+// v1.41    Fix disappearing names
+// v1.42    CSS workaround for stacked tiles
+// v1.43    Restored name modification
+// v1.44    Restored 'show-only-video' option and pinning; implemented tile alphabetical sorting
+// v1.45    Restored tile name transformation
+// v1.46    Restored own video mirroring + better tile layout
+// v1.47    Show own presentation in grid, customization of presentation tiles size (2x, 3x with grid-columns CSS)
+// v1.48    Fix for pinning when presentation in grid
 ;(function () {
   // If included by our extension's icon page, export translation factory
   if (document.currentScript && document.currentScript.src === window.location.href.replace('popup.html', 'grid.user.js')) {
@@ -47,6 +58,9 @@
         screenCaptureMode: 'Activa el mode captura de pantalla',
         screenCaptureModeDescription: 'Força 16:9, desactiva els noms, bloqueja els vídeos al seu lloc',
         unauthorizedWarning: "ATENCIÓ: es tracta d'una extensió no autoritzada. Instal·leu l'extensió oficial fent clic aquí.",
+        duplicateWarning: 'Multiples extensions Grid View detectades. Si us plau, desinstal·leu els duplicats.',
+        currentRelease: 'Versió actual',
+        originalRelease: 'Versió original aquí (discontinuada)',
         hideParticipant: 'Amaga el participant',
         showParticipant: 'Mostra el participant',
         advancedSettingsLink: 'Mostra la configuració avançada',
@@ -69,6 +83,12 @@
         mnNative: 'Sense canvis ("Marta Vila Puig")',
         mnFirstSpace: 'Mou la primera paraula al final ("Vila Puig, Marta")',
         mnLastSpace: 'Mou l\'última paraula al principi ("Puig, Marta Vila")',
+        forceQuality: 'Qualitat del vídeo',
+        fqAuto: 'Automàtica segons la mida del vídeo i el nombre de participants',
+        fqGood: 'Bona',
+        fqMediocre: 'Mediocre',
+        fqBad: 'Dolenta',
+        fqWorst: 'La pitjor'
       },
       da: {
         showOnlyVideo: 'Vis kun deltagere med video',
@@ -81,7 +101,7 @@
         sourceCode: 'Kildekoden er tilgængelig på GitHub',
         screenCaptureMode: 'Aktiver skærmoptager',
         screenCaptureModeDescription: 'Gennemtvinger 16:9, Deaktiverer navne, Låser video-positioner',
-        unauthorizedWarning: 'Advarsel: Dette er ikke en autoriseret tilføjelse. Installer venligst den officielle, ved at klikke her.',
+        unauthorizedWarning: 'Advarsel: Dette er ikke en autoriseret tilføjelse. Installer venligst den officielle, ved at klikke her.'
       },
       de: {
         showOnlyVideo: 'Nur Teilnehmer mit Video anzeigen',
@@ -96,7 +116,7 @@
         screenCaptureModeDescription: 'Erzwingt 16:9, entfernt Namen, fixiert Videoposition',
         unauthorizedWarning: 'WARNUNG: Dies ist keine autorisierte Erweiterung. Bitte installieren Sie die offizielle Version. Klicken Sie dafür hier.',
         hideParticipant: 'Teilnehmer verbergen',
-        showParticipant: 'Teilnehmer anzeigen',
+        showParticipant: 'Teilnehmer anzeigen'
       },
       en: {
         showOnlyVideo: 'Only show participants with video',
@@ -111,6 +131,10 @@
         screenCaptureModeDescription: 'Forces 16:9, Disables names, Locks videos in place',
         unauthorizedWarning: 'WARNING: This is an unauthorized extension. Please install the official release by clicking here.',
         duplicateWarning: 'Multiple Grid View extensions detected. Please uninstall duplicates.',
+        currentRelease: 'Current release',
+        donate: 'Support this extension! <br /><small>(make a small donation)</small>',
+        donateAdvancedSettings: 'Please, show your interest for Grid View by making a small donation <a href="https://paypal.me/SimoneMarullo" target="_blank">here</a>.',
+        originalRelease: 'Original release here (discontinued)',
         hideParticipant: 'Hide Participant',
         showParticipant: 'Show Participant',
         advancedSettingsLink: 'View Advanced Settings',
@@ -125,7 +149,14 @@
         ownVideoBehavior: 'Own Video In Grid Behavior',
         ovbNative: 'Keep video mirrored',
         ovbFlip: 'Flip video to match what others see',
+        presentationSize: 'Size of presentation tiles',
+        psNormal: 'Normal (1x)',
+        psLarger: 'Large (2x)',
+        psMuchLarger: 'Very large (3x)',
         presentationBehavior: 'Own Presentation Behavior',
+        youArePresentingBehavior: "'You are presenting' box Behavior",
+        yapNever: 'Hide',
+        yapAlways: 'Show',
         pbNever: 'Never show presentation in grid',
         pbOwnVideo: 'Show presentation in grid when "Include yourself in the grid" is selected',
         pbAlways: 'Always show presentation in grid',
@@ -138,20 +169,51 @@
         fqGood: 'Good',
         fqMediocre: 'Mediocre',
         fqBad: 'Bad',
-        fqWorst: 'Worst',
+        fqWorst: 'Worst'
       },
       es: {
-        showOnlyVideo: 'Mostrar solo participantes con vídeo',
-        highlightSpeaker: 'Resaltar los que hablan',
-        includeOwnVideo: 'Incluir mi vídeo en la cuadrícula',
-        autoEnable: 'Habilitar vista en cuadrícula por defecto',
+        showOnlyVideo: 'Muestra solo participantes con vídeo',
+        highlightSpeaker: 'Resalta a los que hablan',
+        includeOwnVideo: 'Incluye mi vídeo en la cuadrícula',
+        autoEnable: 'Habilita la vista en cuadrícula por defecto',
         notRunning: 'La vista en cuadrícula no funciona en esta página',
         noMeeting: 'La vista en cuadrícula no funciona hasta que no estés en una llamada',
-        enabled: 'Habilitar vista en cuadrícula',
+        enabled: 'Habilita la vista en cuadrícula',
         sourceCode: 'Código fuente disponible en GitHub',
-        screenCaptureMode: 'Habilitar modo captura de pantalla',
-        screenCaptureModeDescription: 'Forzar 16:9, deshabilita nombres, fija el vídeo en su lugar',
+        screenCaptureMode: 'Habilita el modo de captura de pantalla',
+        screenCaptureModeDescription: 'Fuerza 16:9, deshabilita nombres y fija el vídeo en su lugar',
         unauthorizedWarning: 'ATENCIÓN: Esta es una extensión no autorizada. Por favor, instale la versión oficial haciendo clic aquí.',
+        duplicateWarning: 'Multiples extensiones Grid View detectadas. Por favor, desinstale los duplicados.',
+        currentRelease: 'Versión actual',
+        originalRelease: 'Versión original aquí (descontinuada)',
+        hideParticipant: 'Oculta el participante',
+        showParticipant: 'Muestra el participante',
+        advancedSettingsLink: 'Muestra la configuración avanzada',
+        advancedSettingsTitle: 'Configuración avanzada de Google Meet Grid View',
+        bottomToolbarBehavior: "Comportamiento de la barra de herramientas inferior",
+        btbNative: "Tapa la cuadrícula cuando se muestre la barra de herramientas",
+        btbResize: "Cambia el tamaño de la cuadrícula cuando se muestre la barra de herramientas",
+        btbForce: "Muestra siempre la barra de herramientas y cambia el tamaño de la cuadrícula",
+        rightToolbarBehavior: 'Comportamiento del chat y el listado de personas',
+        rtbNative: 'Tapa la cuadrícula cuando se muestre el chat',
+        rtbResize: 'Cambia el tamaño de la cuadrícula cuando se muestre el chat',
+        ownVideoBehavior: 'Comportamiento del propio vídeo',
+        ovbNative: "Mantén el efecto espejo",
+        ovbFlip: 'Muestra el vídeo tal y como te ven los demás',
+        presentationBehavior: 'Comportamiento de la propia presentación',
+        pbNever: 'No muestres nunca la presentación en la cuadrícula',
+        pbOwnVideo: 'Muestra la presentación en la cuadrícula cuando se haya seleccionado "Incluye mi vídeo en la cuadrícula"',
+        pbAlways: 'Muestra siempre la presentación en la cuadrícula',
+        modifyNames: 'Cambio de los nombres de los participantes',
+        mnNative: 'Sin cambios ("Marta Villa Pérez")',
+        mnFirstSpace: 'Mueve la primera palabra al final ("Villa Pérez, Marta")',
+        mnLastSpace: 'Mueve la última palabra al principio ("Pérez, Marta Villa")',
+        forceQuality: 'Calidad de video',
+        fqAuto: 'Automática según el tamaño del video y el número de participantes',
+        fqGood: 'Buena',
+        fqMediocre: 'Mediocre',
+        fqBad: 'Mala',
+        fqWorst: 'La peor'
       },
       fr: {
         showOnlyVideo: 'Ne montrer que les participants avec caméra',
@@ -166,12 +228,12 @@
         screenCaptureModeDescription: "Force l'affichage 16:9, désactive les noms, vérrouille les positions des vidéos",
         unauthorizedWarning: "ATTENTION : Il s'agit d'une extension non autorisée. Installez la version officielle en cliquant ici.",
         hideParticipant: 'Cacher le participant',
-        showParticipant: 'Afficher le participant',
+        showParticipant: 'Afficher le participant'
       },
       hr: {
         showOnlyVideo: 'Prikaži samo sudionike sa kamerom',
         highlightSpeaker: 'Naglasi govornike',
-        includeOwnVideo: 'Uključi sebe u mrežnom prikazu',
+        includeOwnVideo: 'Uključi sebe u mrežnom prikazu'
       },
       id: {
         showOnlyVideo: 'Hanya tampilkan peserta dengan video',
@@ -186,7 +248,7 @@
         screenCaptureModeDescription: 'Paksa 16:9, Nonaktifkan nama, kunci video pada tempatnya',
         unauthorizedWarning: 'PERINGATAN: Ini adalah ekstensi yang tidak resmi. Silakan pasang rilis resmi dengan mengklik di sini.',
         hideParticipant: 'Sembunyikan Peserta',
-        showParticipant: 'Tampilkan Peserta',
+        showParticipant: 'Tampilkan Peserta'
       },
       it: {
         showOnlyVideo: 'Mostra solo i partecipanti con videocamera',
@@ -222,7 +284,7 @@
         modifyNames: 'Modifica il nome dei partecipanti',
         mnNative: 'Nessuna modifica ("Alfa Bravo Charlie")',
         mnFirstSpace: 'Sposta la prima parola alla fine ("Bravo Charlie, Alfa")',
-        mnLastSpace: 'Sposta l\'ultima parola all\'inizio ("Charlie, Alfa Bravo")',
+        mnLastSpace: 'Sposta l\'ultima parola all\'inizio ("Charlie, Alfa Bravo")'
       },
       ja: {
         showOnlyVideo: 'カメラをオンにしている参加者のみ',
@@ -230,7 +292,7 @@
         includeOwnVideo: '自分を含める',
         autoEnable: '初期状態でグリッド表示を有効化',
         screenCaptureMode: '画面キャプチャモードを有効化',
-        screenCaptureModeDescription: '画面比率を16:9, 名前を非表示, ビデオの位置を固定にします。',
+        screenCaptureModeDescription: '画面比率を16:9, 名前を非表示, ビデオの位置を固定にします。'
       },
       nl: {
         showOnlyVideo: 'Toon alleen deelnemers met video',
@@ -261,12 +323,12 @@
         modifyNames: 'Deelnemersnamen aanpassen',
         mnNative: 'Niet aanpassen ("Jantje van de Berg")',
         mnFirstSpace: 'Eerste woord als laatste ("van de Berg, Jantje")',
-        mnLastSpace: 'Laatste woord als eerste ("Berg, Jantje van de")',
+        mnLastSpace: 'Laatste woord als eerste ("Berg, Jantje van de")'
       },
       pl: {
         showOnlyVideo: 'Pokaż tylko uczestników z wideo',
         highlightSpeaker: 'Wyróżnij osobę prezentującą',
-        includeOwnVideo: 'Uwzględnij siebie',
+        includeOwnVideo: 'Uwzględnij siebie'
       },
       pt: {
         showOnlyVideo: 'Mostrar apenas participantes com vídeo',
@@ -279,7 +341,7 @@
         sourceCode: 'Código fonte disponível no GitHub',
         screenCaptureMode: 'Ativar captura de ecrã',
         screenCaptureModeDescription: 'Forçar aspeto 16:9, Remover nomes, Parar posição dos vídeos',
-        unauthorizedWarning: 'ATENÇÃO: Esta é uma extensão não autorizada. Por favor, clique aqui para instalar a versão oficial.',
+        unauthorizedWarning: 'ATENÇÃO: Esta é uma extensão não autorizada. Por favor, clique aqui para instalar a versão oficial.'
       },
       'pt-BR': {
         showOnlyVideo: 'Mostrar somente participantes com vídeo',
@@ -315,7 +377,7 @@
         modifyNames: 'Modificar nomes de participantes',
         mnNative: 'Nenhuma modificação ("Alpha Bravo Charlie")',
         mnFirstSpace: 'Mover o primeiro nome para o final ("Bravo Charlie, Alpha")',
-        mnLastSpace: 'Mover o último nome para o início ("Charlie, Alpha Bravo")',
+        mnLastSpace: 'Mover o último nome para o início ("Charlie, Alpha Bravo")'
       },
       ru: {
         showOnlyVideo: 'Показывать участников только с видео',
@@ -328,7 +390,7 @@
         sourceCode: 'Исходный код доступен на GitHub',
         unauthorizedWarning: 'ВНИМАНИЕ: Это не авторизированное расширение. Пожалуйста, установите оффициальную версию тут.',
         hideParticipant: 'Скрыть участника',
-        showParticipant: 'Показать участника',
+        showParticipant: 'Показать участника'
       },
       sv: {
         showOnlyVideo: 'Visa endast deltagare med video',
@@ -341,23 +403,23 @@
         sourceCode: 'Källkod tillgänglig på GitHub',
         screenCaptureMode: 'Slå på skärminspelnings läge',
         screenCaptureModeDescription: 'Tvingar 16:9, Inaktiverar namn, Låser videor på plats',
-        unauthorizedWarning: 'VARNING: Detta är inte ett auktoriserat tillägg. Installera det officiella tillägget genom att klicka här.',
+        unauthorizedWarning: 'VARNING: Detta är inte ett auktoriserat tillägg. Installera det officiella tillägget genom att klicka här.'
       },
       uk: {
         showOnlyVideo: 'Показати лише учасників з відео',
         highlightSpeaker: 'Виділити ведучого',
-        includeOwnVideo: 'Включити себе',
+        includeOwnVideo: 'Включити себе'
       },
       zh: {
         showOnlyVideo: '仅显示有视讯的与会者',
         highlightSpeaker: '强调发言者',
-        includeOwnVideo: '将自己的视讯显示于网格中',
+        includeOwnVideo: '将自己的视讯显示于网格中'
       },
       'zh-TW': {
         showOnlyVideo: '僅顯示有視訊的與會者',
         highlightSpeaker: '強調發言者',
-        includeOwnVideo: '將自己的視訊顯示於網格中',
-      },
+        includeOwnVideo: '將自己的視訊顯示於網格中'
+      }
     }
 
     const T = key =>
@@ -387,13 +449,32 @@
     // Create the styles we need
     const s = document.createElement('style')
     s.innerHTML = `
-    .__gmgv-vid-container {
+    .__gmgv-vid-container:not(.__gmgv-single-tile) {
       display: grid;
+      gap: 0px 0px;
+      grid-template-columns: repeat(auto-fit, minmax(30%, auto));
+      grid-template-areas:
+      ". . ."
+      ". . ."
+      ". . .";
       grid-auto-rows: 1fr;
       top: 50px !important;
-      right: 2px !important;
       left: 2px !important;
-      bottom: 2px !important;
+      bottom: 90px !important;
+    }
+    .__gmgv-vid-container.__gmgv-9plus-tiles:not(.__gmgv-single-tile) {
+      grid-template-areas:
+      ". . . ."
+      ". . . ."
+      ". . . .";
+      grid-template-columns: repeat(auto-fit, minmax(15%, auto));
+    }
+    .__gmgv-vid-container.__gmgv-30plus-tiles:not(.__gmgv-single-tile) {
+      grid-template-areas:
+      ". . . ."
+      ". . . ."
+      ". . . .";
+      grid-template-columns: repeat(auto-fit, minmax(12%, auto));
     }
     .__gmgv-vid-container.__gmgv-rtb-resize.__gmgv-chat-enabled {
       right: 325px !important;
@@ -423,7 +504,10 @@
       width: 100% !important;
       background: 0 0 !important;
     }
-    .__gmgv-vid-container > div:after {
+    .__gmgv-vid-container div[__gmgv-tile-type="you-are-presenting"][__gmgv-hidden="yes"], .__gmgv-vid-container.__gmgv-show-only-video div[__gmgv-has-video="false"] {
+      display:none;
+    }
+    .__gmgv-vid-container > div[__gmgv-tile-type="user"]:after, .__gmgv-vid-container > div[__gmgv-tile-type="own-presentation"]:after, .__gmgv-vid-container > div[__gmgv-tile-type="other-presentation"]:after {
       content: "";
       display: block;
       position: absolute;
@@ -439,19 +523,76 @@
       z-index: 1;
       pointer-events: none;
     }
+
+    .__gmgv-sidebar-transformed .__gmgv-speaking-icon{
+      display:none
+    }
+
+    .__gmgv-old-list{
+      display:block;
+    }
+    .__gmgv-new-list{
+      display:none;
+    }
+
+    .__gmgv-sidebar-transformed [role="list"]{
+      display:none;
+    }
+    .__gmgv-sidebar-transformed .__gmgv-old-list{
+      display:none
+    }
+
+    .__gmgv-sidebar-transformed .__gmgv-new-list{
+      display:block
+    }
+
     .__gmgv-vid-container > div > div:first-child {
       z-index: -2;
     }
-    .__gmgv-vid-container > div > div {
+    .__gmgv-vid-container > div[__gmgv-tile-type="user"] > div, .__gmgv-vid-container > div[__gmgv-tile-type="own-presentation"] > div, .__gmgv-vid-container > div[__gmgv-tile-type="other-presentation"] > div {
       display: flex !important;
       opacity: 1 !important;
     }
+
+    .__gmgv-vid-container > div[__gmgv-tile-type="you-are-presenting"] > div > div {
+      height: auto !important;
+      margin-top: -40px;
+      padding: 0px !important;
+      width: auto !important;
+    }
+    .__gmgv-vid-container > div[__gmgv-tile-type="you-are-presenting"]{
+     height:240px !important;
+     width: 210px !important;
+    }
+     .__gmgv-vid-container > div[__gmgv-tile-type="you-are-presenting"] > div {
+      width: min-content !important;
+      height: min-content !important;
+    }
+
     .__gmgv-vid-container:not(.__gmgv-screen-capture-mode) > div.__gmgv-speaking:after {
       transition: opacity 60ms linear;
       opacity: 1;
     }
-    .__gmgv-vid-container.__gmgv-flip-self video {
+
+    .__gmgv-vid-container.__gmgv-flip-self > div[__gmgv-me-tile="true"] video {
       transform: scaleX(1) !important;
+    }
+
+    .__gmgv-vid-container .__gmgv-alt-name-div{
+       color:#fff;
+       font-size:120%;
+       margin-left:8px;
+       overflow:hidden;
+       text-overflow:ellipsis;
+       text-shadow:0 0 2px rgba(0,0,0,0.80);
+       white-space:nowrap;
+       position: absolute;
+       bottom: 13px;
+       left: 44px;
+       z-index: 100;
+    }
+    .__gmgv-vid-container.__gmgv-single-tile .__gmgv-alt-name-div{
+       display:none
     }
 
     .__gmgv-duplicate-warning {
@@ -475,13 +616,14 @@
     .__gmgv-button > svg {
       height: 24px;
       width: 24px;
+      padding: 1em 2em;
     }
     .__gmgv-button > div {
       box-sizing: border-box;
       display: none;
       position: absolute;
       top: 40px;
-      left: 0;
+      right: 0;
       width: 300px;
       padding: 12px;
       background: white;
@@ -655,6 +797,37 @@
       line-height: 20px;
       font-weight: 500;
     }
+
+    /* Fix disappearing names */
+    .__gmgv-vid-container .sqgFe {
+		opacity: 1 !important;
+		display: flex !important;
+	}
+
+    .__gmgv-vid-container div[__gmgv-name-transformed="true"] .sqgFe div:last-child{
+       display:none;
+    }
+    .__gmgv-vid-container.__gmgv-single-tile div[__gmgv-name-transformed="true"] .sqgFe div:last-child{
+       display:block;
+    }
+    .__gmgv-vid-container.__gmgv-single-tile div[__gmgv-added="true"]{
+       display:none;
+    }
+    .__gmgv-vid-container.__gmgv-presentation-1x div[__gmgv-tile-type="own-presentation"], .__gmgv-vid-container.__gmgv-presentation-1x div[__gmgv-tile-type="other-presentation"]{
+       grid-row: span 1;
+       grid-column: span 1;
+       order: -1 !important;
+    }
+    .__gmgv-vid-container.__gmgv-presentation-2x div[__gmgv-tile-type="own-presentation"], .__gmgv-vid-container.__gmgv-presentation-2x div[__gmgv-tile-type="other-presentation"]{
+       grid-row: span 2;
+       grid-column: span 2;
+       order: -1 !important;
+    }
+    .__gmgv-vid-container.__gmgv-presentation-3x div[__gmgv-tile-type="own-presentation"], .__gmgv-vid-container.__gmgv-presentation-3x div[__gmgv-tile-type="other-presentation"]{
+       grid-row: span 3;
+       grid-column: span 3;
+       order: -1 !important;
+    }
   `
     document.body.append(s)
 
@@ -675,11 +848,13 @@
       'show-only-video': localStorage.getItem('gmgv-show-only-video') === 'true',
       'highlight-speaker': localStorage.getItem('gmgv-highlight-speaker') === 'true',
       'include-own-video': localStorage.getItem('gmgv-include-own-video') === 'true',
+      'you-are-presenting-box': ['never', 'always'].find(v => v === localStorage.getItem('gmgv-you-are-presenting-box')) || 'never',
       'auto-enable': localStorage.getItem('gmgv-auto-enable') === 'true',
       'screen-capture-mode': localStorage.getItem('gmgv-screen-capture-mode') === 'true',
       'bottom-toolbar': ['native', 'resize', 'force'].find(v => v === localStorage.getItem('gmgv-bottom-toolbar')) || 'resize',
       'right-toolbar': ['native', 'resize'].find(v => v === localStorage.getItem('gmgv-right-toolbar')) || 'resize',
       'own-video': ['native', 'flip'].find(v => v === localStorage.getItem('gmgv-own-video')) || 'native',
+      'presentation-size': ['1x','2x','3x'].find(v => v === localStorage.getItem('gmgv-presentation-size')) || '1x',
       presentation: ['never', 'own-video', 'always'].find(v => v === localStorage.getItem('gmgv-presentation')) || 'never',
       names: ['native', 'first-space', 'last-space'].find(v => v === localStorage.getItem('gmgv-names')) || 'native',
       'force-quality': ['auto', '2', '3', '4', '5'].find(v => v === localStorage.getItem('gmgv-force-quality')) || 'auto',
@@ -712,11 +887,12 @@
         document.body.appendChild(settingsOverlay)
         settingsOverlay.innerHTML = `
           <div>
+            <span style='color:brown'>Sorry, advanced features may not work as expected (under development).<br /><br /></span>
             <div>
               <span>${T('advancedSettingsTitle')}</span>
               <span class="__gmgv-close"><svg viewBox="0 0 24 24">${close}</svg></span>
             </div>
-            <label>
+            <label style="display:none">
               <span>${T('bottomToolbarBehavior')}</span>
               <select data-gmgv-setting="bottom-toolbar">
                 <option value="native">${T('btbNative')}</option>
@@ -724,37 +900,52 @@
                 <option value="force">${T('btbForce')}</option>
               </select>
             </label>
-            <label>
+            <label style="display:none">
               <span>${T('rightToolbarBehavior')}</span>
               <select data-gmgv-setting="right-toolbar">
                 <option value="native">${T('rtbNative')}</option>
                 <option value="resize">${T('rtbResize')}</option>
               </select>
             </label>
-            <label>
+            <label style='opacity:1.0'>
               <span>${T('ownVideoBehavior')}</span>
               <select data-gmgv-setting="own-video">
                 <option value="native">${T('ovbNative')}</option>
                 <option value="flip">${T('ovbFlip')}</option>
               </select>
             </label>
-            <label>
+            <label style='opacity:1.0'>
               <span>${T('presentationBehavior')}</span>
               <select data-gmgv-setting="presentation">
                 <option value="never">${T('pbNever')}</option>
-                <option value="own-video">${T('pbOwnVideo')}</option>
+                <!--<option value="own-video">${T('pbOwnVideo')}</option>-->
                 <option value="always">${T('pbAlways')}</option>
               </select>
             </label>
-            <label>
+            <label style='opacity:1.0'>
+              <span>${T('presentationSize')}</span>
+              <select data-gmgv-setting="presentation-size">
+                <option value="1x">${T('psNormal')}</option>
+                <option value="2x">${T('psLarger')}</option>
+                <option value="3x">${T('psMuchLarger')}</option>
+              </select>
+            </label>
+            <label style='opacity:1.0'>
+              <span>${T('youArePresentingBehavior')}</span>
+              <select data-gmgv-setting="you-are-presenting-box">
+                <option value="never">${T('yapNever')}</option>
+                <option value="always">${T('yapAlways')}</option>
+              </select>
+            </label>
+            <label style='opacity:1.0'>
               <span>${T('modifyNames')}</span>
               <select data-gmgv-setting="names">
                 <option value="native">${T('mnNative')}</option>
-                <option value="first-space">${T('mnFirstSpace')}</option>
+                <!--<option value="first-space">${T('mnFirstSpace')}</option>-->
                 <option value="last-space">${T('mnLastSpace')}</option>
               </select>
             </label>
-            <label>
+            <label style="display:none">
               <span>${T('forceQuality')}</span>
               <select data-gmgv-setting="force-quality">
                 <option value="auto">${T('fqAuto')}</option>
@@ -764,6 +955,7 @@
                 <option value="5">${T('fqWorst')}</option>
               </select>
             </label>
+            <span style="text-align: center;color: darkgreen;font-style: italic;font-size: 122%;"><br>${T('donateAdvancedSettings')}<br></span>
           </div>
         `
         settingsOverlay.onclick = () => updateSetting('show-settings-overlay', false)
@@ -778,6 +970,9 @@
 
       const ownVideoPreview = document.querySelector('[data-fps-request-screencast-cap]')
       const buttons = ownVideoPreview && ownVideoPreview.parentElement.parentElement.parentElement
+
+      const presentation_container = buttons.childNodes[buttons.childNodes.length-2]
+      if(settings['enabled']) setObserverButtonBarPresentation(presentation_container)
       // If user has other grid view extensions installed, warn them
       if (buttons && !buttons.__grid_ran2) {
         buttons.__grid_ran2 = true
@@ -818,12 +1013,13 @@
         }
         buttons.prepend(toggleButton)
 
+
         toggleButton.innerHTML = `
           <svg viewBox="0 0 24 24">${gridOff}</svg>
           <div>
             <label><input data-gmgv-setting="show-only-video" type="checkbox" /> ${T('showOnlyVideo')}</label>
-            <label><input data-gmgv-setting="highlight-speaker" type="checkbox" /> ${T('highlightSpeaker')}</label>
-            <label><input data-gmgv-setting="include-own-video" type="checkbox" /> ${T('includeOwnVideo')}</label>
+            <label style="display:none"><input data-gmgv-setting="highlight-speaker" type="checkbox" /> ${T('highlightSpeaker')}</label>
+            <label style="display:none"><input data-gmgv-setting="include-own-video" type="checkbox" /> ${T('includeOwnVideo')}</label>
             <label><input data-gmgv-setting="auto-enable" type="checkbox" /> ${T('autoEnable')}</label>
             <hr>
             <label><input data-gmgv-setting="screen-capture-mode" type="checkbox" /> ${T('screenCaptureMode')}</label>
@@ -833,14 +1029,16 @@
             <hr>
             <div class="__gmgv-source-code">
               <small>v${version}</small>
-              <a href="https://github.com/Fugiman/google-meet-grid-view" target="_blank">${T('sourceCode')}</a>
+              <a href="https://github.com/icysapphire/google-meet-grid-view" target="_blank">${T('currentRelease')}</a>
             </div>
+            <hr>
+            <a href="https://paypal.me/SimoneMarullo" target="_blank">${T('donate')}</a>
             ${
               authorized
                 ? ''
                 : `
             <hr>
-            <a href="https://github.com/Fugiman/google-meet-grid-view#official-releases" target="_blank">${T('unauthorizedWarning')}</a>
+            <a href="https://github.com/Fugiman/google-meet-grid-view#official-releases" target="_blank">${T('originalRelease')}</a>
             `
             }
           </div>
@@ -983,7 +1181,7 @@
       return {
         set: function (obj, prop, value) {
           if (value && typeof value === 'function') {
-            const m = /\.([A-Za-z]+)\([a-zA-Z,.]+\{[^\x05]*?this\.([A-Za-z]+)=[A-Za-z]+\(this\)/.exec(value.toString())
+            const m = /\.([A-Za-z]+)\([a-zA-Z,.]+\{[^\x05]*?this\.([A-Za-z]+)=[A-Za-z0-9]+\(this\)/.exec(value.toString())
             if (m) {
               console.log('[google-meet-grid-view] Successfully hooked into rendering pipeline v3', value)
               value = new Proxy(value, RefreshVideoProxyHandlerV3(m[2], m[1]))
@@ -1358,7 +1556,7 @@
       ordering.sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
 
       // Set Pinned Index for use in CSS loop. If there is no pin, use the presenter if available
-      let pinnedIndex = ret.findIndex(v => v[magicKey].isPinned())
+      let pinnedIndex = -1
       if (pinnedIndex < 0) {
         pinnedIndex = ret.findIndex(v => v.__gmgvIsPresentation)
       }
@@ -1539,6 +1737,219 @@
       }
       el.insertBefore(b, el.lastChild)
     }
+    var observer;
+    var timerNames = -1;
+    var timerTiles = -1;
+    var observerNames = -1;
+    var observerButtonBarPresentation = -1;
+
+
+    function updateOwnPresentation(mutations){
+        if(settings['enabled'] && settings['presentation'] === 'always'){
+            for(var mutation of mutations) {
+                if (mutation.type == 'childList' && mutation.addedNodes.length > 0) {
+                    setTimeout(function() {
+                        let vid = mutation.target.querySelector('video')
+                        //console.log("vid", vid)
+                        if(vid != null) bringOwnPresentationToGrid(vid);
+                    }, 6000)
+                }
+                if (mutation.type == 'childList' && mutation.removedNodes.length > 0){
+                    document.querySelectorAll('div[__gmgv-tile-type="own-presentation"]').forEach(d => {d.remove();});
+                }
+
+            }
+        }
+    }
+
+    function bringOwnPresentationToGrid(video){
+        console.log('presentation video', video)
+        console.log('container', container)
+        if(settings['presentation'] === 'always'){
+            let tile = document.createElement("div")
+            tile.setAttribute('__gmgv-tile-type', 'own-presentation')
+            tile.setAttribute('__gmgv-added', 'true')
+            container.appendChild(tile)
+            tile.appendChild(video)
+        }
+    }
+
+    function setObserverNames(participants_list){
+        var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
+            observerNames = new MutationObserver(function(mutations) {
+                updateNames(true);
+            });
+
+            observerNames.observe(participants_list, {
+                attributes: false,
+                childList: true,
+                characterData: false
+            });
+    }
+
+    function setObserverButtonBarPresentation(presentation_container){
+        if (typeof presentation_container == 'undefined' || observerButtonBarPresentation != -1) {
+            return;
+        }
+
+        var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
+            observerButtonBarPresentation = new MutationObserver(function(mutations) {
+               updateOwnPresentation(mutations);
+            });
+
+            observerButtonBarPresentation.observe(presentation_container, {
+                attributes: false,
+                childList: true,
+                characterData: false
+            });
+    }
+
+    function transformname(n){let p = n.split(' ')
+      p[p.length - 1] += ','
+      p.push(p.shift())
+      return p.join(' ')
+    }
+
+
+
+    function checkTiles(){
+        let tiles = document.querySelectorAll('.__gmgv-vid-container > div')
+        container.classList.toggle('__gmgv-9plus-tiles', false)
+        container.classList.toggle('__gmgv-30plus-tiles', false)
+        if(tiles.length > 30) container.classList.toggle('__gmgv-30plus-tiles', true)
+        else if(tiles.length > 9) container.classList.toggle('__gmgv-9plus-tiles', true)
+
+        tiles.forEach(d => {
+            if(d.hasAttribute('__gmgv-tile-type')  && d.getAttribute('__gmgv-tile-type') == 'own-presentation'){
+
+            } else if(d.childNodes.length == 2 && d.querySelector('video') != null) {
+                // Other presentation
+                d.setAttribute('__gmgv-tile-type','other-presentation')
+            } else if(d.childNodes.length == 2 && d.children[0].childNodes.length == 1 && d.querySelector('video') == null) {
+                d.setAttribute('__gmgv-tile-type','you-are-presenting')
+                if(settings['you-are-presenting-box'] == 'never') {
+                  d.setAttribute('__gmgv-hidden','yes')
+                  //d.classList.toggle('__gmgv-hidden', true)
+                } else {
+                  d.setAttribute('__gmgv-hidden','no')
+                  //d.classList.toggle('__gmgv-hidden', false)
+                }
+            } else {
+                d.setAttribute('__gmgv-tile-type','user')
+            }
+
+            if(d.getAttribute('__gmgv-name-transformed') == null) d.querySelectorAll('.__gmgv-alt-name-div').forEach(d => {d.remove();})
+
+            d.setAttribute('__gmgv-has-video', Array.from(d.querySelectorAll('video')).filter(s => window.getComputedStyle(s).getPropertyValue('display') != 'none').length > 0)
+
+        })
+        if(Array.from(document.querySelectorAll('.__gmgv-vid-container > div')).filter(function (e) {return !((e.hasAttribute('__gmgv-hidden') && e.getAttribute('__gmgv-hidden') == 'yes') || e.hasAttribute('__gmgv-added'))}).length<=1){
+            container.classList.toggle('__gmgv-single-tile', true)
+        } else {
+            container.classList.toggle('__gmgv-single-tile', false)
+        }
+    }
+
+    function updateNames(forceUpdate = false){
+        let original_listitems = document.querySelectorAll('[role="listitem"]')
+        document.querySelector('[role="list"]:not(.__gmgv-transformed)').parentNode.parentNode.classList.add('__gmgv-sidebar-transformed')
+        let transformedNames = false
+        original_listitems.forEach(d => {
+            let sp = d.children[0].querySelector('div:first-child > span:first-child');
+            d.children[1].children[0].classList.add('__gmgv-speaking-icon')
+            if(!d.hasAttribute('__gmgv-name') || d.getAttribute('__gmgv-name') != sp.innerText){
+                if(!d.classList.contains('__gmgv-transformed')) transformedNames = true
+                let oldname = sp.innerText
+                let newname = transformname(oldname)
+                sp.innerText= newname
+                sp.classList.toggle('__gmgv-transformed', true)
+                if(sp.nextSibling != null) d.setAttribute('__gmgv-me-listitem', true)
+                d.setAttribute('__gmgv-name', newname)
+                d.setAttribute('__gmgv-old-name', oldname)
+                d.setAttribute('__gmgv-transformed','yes')
+                d.classList.toggle('__gmgv-transformed', true)
+            }
+
+      })
+      if(forceUpdate || transformedNames){
+          document.querySelectorAll('.__gmgv-transformed[role="list"]').forEach(d => {d.remove();});
+          let oldlist = document.querySelector('[role="list"]:not(.__gmgv-transformed)')
+          oldlist.classList.toggle('__gmgv-old-list')
+          let newlist = document.createElement("div")
+          newlist.classList = oldlist.classList
+          newlist.classList.toggle('__gmgv-old-list', false)
+          newlist.classList.toggle('__gmgv-new-list', true)
+
+          newlist.innerHTML = '';
+          newlist.classList.toggle('__gmgv-transformed',true)
+          var categoryItems = oldlist.querySelectorAll('[role="listitem"]');
+          var categoryItemsArray = Array.from(categoryItems).map(d => d.cloneNode(true));
+
+          let sorted = categoryItemsArray.sort(sorter);
+
+          function sorter(a,b) {
+              return a.getAttribute('__gmgv-name').localeCompare(b.getAttribute('__gmgv-name'));
+          }
+
+          for (var i=0, n=sorted.length; i < n; ++i ) {
+              let e = sorted[i];
+              e.classList.toggle('__gmgv-transformed',true);
+              newlist.appendChild(e);
+              let tile = container.querySelector('div[data-initial-participant-id="'+e.getAttribute('data-participant-id')+'"]')
+              if(tile != null) {
+                  tile.style.order = i
+                  if(tile.children.length == 3) {
+                      tile.querySelectorAll('.__gmgv-alt-name-div').forEach(d => {d.remove();})
+                      let altnamediv = document.createElement("div")
+                      altnamediv.classList.add('__gmgv-alt-name-div')
+                      altnamediv.innerText = e.getAttribute('__gmgv-name')
+                      tile.children[0].appendChild(altnamediv)
+                      tile.setAttribute('__gmgv-name-transformed', true)
+                      if(e.getAttribute('__gmgv-me-listitem') == 'true') tile.setAttribute('__gmgv-me-tile', true)
+
+                      let namebar = tile.children[1]
+                      if(namebar.children.length > 0) {
+                          let namecontainer = namebar.children[0]
+                          if(namecontainer.children.length > 0){
+                              let namediv = namecontainer.children[namecontainer.children.length-1]
+                              //namediv.innerText = e.getAttribute('__gmgv-name')
+                          }
+                      }
+                  }
+
+              }
+          }
+
+          oldlist.parentNode.insertBefore(newlist, oldlist.sibling);
+          oldlist.classList.add('.__gmgv-transformed')
+      }
+
+      if(observerNames==-1 && original_listitems.length > 0){
+            setObserverNames(document.querySelector('[role="list"]:not(.__gmgv-transformed)'));
+        }
+    }
+
+    function startUpdatingNames(){
+        if(timerNames==-1) timerNames = setInterval(updateNames, 3000);
+    }
+
+    function startCheckingTiles(){
+        if(timerTiles==-1) timerTiles = setInterval(checkTiles, 3000);
+    }
+
+    function stopCheckingTiles(){
+        if(timerTiles!=-1) clearInterval(timerTiles);
+    }
+
+    function stopUpdatingNames(){
+        if(timerNames!=-1) clearInterval(timerNames);
+        if(observerNames!=-1) observerNames.disconnect();
+        observerNames = -1;
+        timerNames = -1;
+        let d = document.querySelector('.__gmgv-sidebar-transformed')
+        if(d != null)
+            d.toggle('__gmgv-sidebar-transformed', false)
+    }
 
     function updateSetting(name, value) {
       settings[name] = value
@@ -1568,9 +1979,43 @@
         container.classList.toggle('__gmgv-btb-force', settings['bottom-toolbar'] === 'force')
         container.classList.toggle('__gmgv-rtb-resize', settings['right-toolbar'] === 'resize')
         container.classList.toggle('__gmgv-flip-self', settings['own-video'] === 'flip')
+        container.classList.toggle('__gmgv-show-only-video', settings['show-only-video'])
+
         if (!settings['enabled']) {
           container.style.marginLeft = ''
           container.style.marginTop = ''
+          stopUpdatingNames();
+          stopCheckingTiles();
+          container.classList.toggle('__gmgv-presentation-1x', false)
+          container.classList.toggle('__gmgv-presentation-2x', false)
+          container.classList.toggle('__gmgv-presentation-3x', false)
+          document.querySelectorAll('div[__gmgv-added="true"]').forEach(d => {d.remove();});
+        } else {
+            container.classList.toggle('__gmgv-presentation-1x', settings['presentation-size'] == '1x')
+            container.classList.toggle('__gmgv-presentation-2x', settings['presentation-size'] == '2x')
+            container.classList.toggle('__gmgv-presentation-3x', settings['presentation-size'] == '3x')
+            if(settings['presentation'] === 'never') document.querySelectorAll('div[__gmgv-tile-type="own-presentation"]').forEach(d => {d.remove();});
+            checkTiles();
+            startCheckingTiles();
+            if(settings['names'] == 'last-space') startUpdatingNames(); else {
+                container.classList.toggle('__gmgv-name-transformed', false)
+                stopUpdatingNames();
+            }
+            var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
+            var list = document.querySelector('.__gmgv-vid-container');
+
+            observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+
+                });
+                checkTiles();
+            });
+
+            observer.observe(list, {
+                attributes: false,
+                childList: true,
+                characterData: false
+            });
         }
 
         const bottomBar = Array.from(container.parentElement.parentElement.children).find(el => el.clientHeight === 88)
@@ -1641,3 +2086,4 @@
     })
   }
 })()
+

@@ -25,7 +25,11 @@ window.addEventListener('message', event => {
 })
 
 // Add our user script
-var s = document.createElement('script')
-s.setAttribute('data-version', browser.runtime.getManifest().version)
-s.src = browser.extension.getURL('grid.user.js')
-document.body.appendChild(s)
+var scripts = ['grid.user.js']
+scripts.forEach(function(script) {
+  var s = document.createElement('script')
+  s.setAttribute('data-version', browser.runtime.getManifest().version)
+  s.src = browser.extension.getURL(script)
+  document.body.appendChild(s)
+});
+
